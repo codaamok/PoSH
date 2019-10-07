@@ -15,7 +15,12 @@ Function Get-CloudflareZoneID {
     )
     try {
         $URL = ("https://api.cloudflare.com/client/v4/zones?name={0}" -f $Name)
-        $id = Invoke-RestMethod -Uri $URL -Method "GET" -Headers @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"} | Select-Object -ExpandProperty result | Select-Object -ExpandProperty id
+        $invokeRestMethodSplat = @{
+            Headers = @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"}
+            Method = "GET"
+            Uri = $URL
+        }
+        $id = Invoke-RestMethod @invokeRestMethodSplat | Select-Object -ExpandProperty result | Select-Object -ExpandProperty id
     }
     catch {
         Throw $error[0]
@@ -47,7 +52,12 @@ Function Get-CloudflareDNSARecord {
         ForEach ($Domain in $Domains) {
             try {
                 $URL = ("https://api.cloudflare.com/client/v4/zones/{0}/dns_records?type=A&name={1}" -f $ZoneID, $Domain)
-                $r = Invoke-RestMethod -Uri $URL -Method "GET" -Headers @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"} | Select-Object -ExpandProperty result
+                $invokeRestMethodSplat = @{
+                    Headers = @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"}
+                    Method = "GET"
+                    Uri = $URL
+                }
+                $r = Invoke-RestMethod @invokeRestMethodSplat | Select-Object -ExpandProperty result
                 [PSCustomObject]@{
                     Name    = $r.Name
                     ID      = $r.ID
@@ -89,7 +99,13 @@ Function Update-CloudflareDNSARecord {
     )
     try {
         $URL = ("https://api.cloudflare.com/client/v4/zones/{0}/dns_records/{1}" -f $ZoneID, $Domain.ID)
-        Invoke-RestMethod -Uri $URL -Method "PUT" -Headers @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"} -Body (@{"type" = "A"; "name" = $Domain.Name; "content" = $IP; "proxied" = $Proxied.IsPresent} | ConvertTo-Json -Compress)
+        $invokeRestMethodSplat = @{
+            Headers = @{"X-Auth-Email" = $Email; "X-Auth-Key" = $Key; "Content-Type" = "application/json"}
+            Method = "PUT"
+            Body = (@{"type" = "A"; "name" = $Domain.Name; "content" = $IP; "proxied" = $Proxied.IsPresent} | ConvertTo-Json -Compress)
+            Uri = $URL
+        }
+        Invoke-RestMethod @invokeRestMethodSplat
     }
     catch {
         Write-Warning ("Could not update DNS record for `"{0}`": {1}" -f $Domain, $error[0].Exception.Message)
