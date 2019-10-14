@@ -46,8 +46,6 @@ Function Get-CMBaselineDeploymentStatusMembers {
 
     $Collection = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
-    $Collection
-
     $Query = "SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified,CreatedBy FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName
     $ConfigurationBaselineInfo = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
