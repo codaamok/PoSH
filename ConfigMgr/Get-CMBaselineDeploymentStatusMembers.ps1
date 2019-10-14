@@ -37,19 +37,21 @@ Function Get-CMBaselineDeploymentStatusMembers {
 
     switch ($PSCmdlet.ParameterSetName) {
         "CollectionName" {
-            $Query = "SELECT CollectionID FROM SMS_Collection WHERE Name=`"{0}`"" -f $CollectionName
+            $Query = "SELECT Name,CollectionID FROM SMS_Collection WHERE Name=`"{0}`"" -f $CollectionName
         }
         "CollectionID" {
-            $Query = "SELECT CollectionName FROM SMS_Collection WHERE CollectionID=`"{0}`"" -f $CollectionId
+            $Query = "SELECT Name,CollectionID FROM SMS_Collection WHERE CollectionID=`"{0}`"" -f $CollectionId
         }
     }
 
     $Collection = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
-    $Query = "SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName
+    $Collection
+
+    $Query = "SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified,CreatedBy FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName
     $ConfigurationBaselineInfo = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
-    $Query = "SELECT AssignmentID FROM SMS_BaselineAssignment WHERE AssignedCI_UniqueID=`"{0}`" AND TargetCollectionID=`"{1}`"" -f $ConfigurationBaselineInfo.CI_uniqueID, $Collection.CollectionId
+    $Query = "SELECT AssignmentID FROM SMS_BaselineAssignment WHERE AssignedCI_UniqueID=`"{0}`" AND TargetCollectionID=`"{1}`"" -f $ConfigurationBaselineInfo.CI_uniqueID, $Collection.CollectionID
     $AssignmentID = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssignmentID
 
     $Query = "SELECT AssetName FROM SMS_DCMDeployment{0}AssetDetails WHERE AssignmentID=`"{1}`"" -f $Status, $AssignmentID
@@ -60,7 +62,10 @@ Function Get-CMBaselineDeploymentStatusMembers {
         Description         = $ConfigurationBaselineInfo.LocalizedDescription
         DateCreated         = $ConfigurationBaselineInfo.DateCreated
         DateLastModified    = $ConfigurationBaselineInfo.DateLastModified
-        CollectionName      = $Collection.Name
+        CreatedBy           = $ConfigurationBaselineInfo.CreatedBy
+        ModifiedBy          = $ConfigurationBaselineInfo.ModifiedBy
+        TargetCollection    = ("{0} ({1})" -f $Collection.Name, $Collection.CollectionID)
+        Compliance          = $Status
         MembersCount        = $Members.count
         Members             = $Members
     }
