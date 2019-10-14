@@ -35,18 +35,24 @@ Function Get-CMBaselineDeploymentStatusMembers {
     $SiteCode = Get-WmiObject -Query "SELECT SiteCode FROM SMS_ProviderLocation" -Namespace "ROOT\SMS" -ComputerName $SiteServer | Select-Object -ExpandProperty SiteCode
     $SiteNamespace = ("ROOT\SMS\site_{0}" -f $SiteCode)
 
-    if ($CollectionName) {
-        $Query = ("SELECT CollectionID FROM SMS_Collection WHERE Name=`"{0}`"" -f $CollectionName)
-        $CollectionID = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty CollectionID
+    switch ($PSCmdlet.ParameterSetName) {
+        "CollectionName" {
+            $Query = "SELECT CollectionID FROM SMS_Collection WHERE Name=`"{0}`"" -f $CollectionName
+        }
+        "CollectionID" {
+            $Query = "SELECT CollectionName FROM SMS_Collection WHERE CollectionID=`"{0}`"" -f $CollectionId
+        }
     }
 
-    $Query = ("SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName)
+    $Collection = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
+
+    $Query = "SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName
     $ConfigurationBaselineInfo = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
-    $Query = ("SELECT AssignmentID FROM SMS_BaselineAssignment WHERE AssignedCI_UniqueID=`"{0}`"" -f $ConfigurationBaselineInfo.CI_uniqueID)
+    $Query = "SELECT AssignmentID FROM SMS_BaselineAssignment WHERE AssignedCI_UniqueID=`"{0}`" AND TargetCollectionID=`"{1}`"" -f $ConfigurationBaselineInfo.CI_uniqueID, $Collection.CollectionId
     $AssignmentID = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssignmentID
 
-    $Query = ("SELECT AssetName FROM SMS_DCMDeployment{0}AssetDetails WHERE AssignmentID=`"{1}`"" -f $Status, $AssignmentID)
+    $Query = "SELECT AssetName FROM SMS_DCMDeployment{0}AssetDetails WHERE AssignmentID=`"{1}`"" -f $Status, $AssignmentID
     $Members = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssetName
 
     [PSCustomObject]@{
@@ -54,6 +60,7 @@ Function Get-CMBaselineDeploymentStatusMembers {
         Description         = $ConfigurationBaselineInfo.LocalizedDescription
         DateCreated         = $ConfigurationBaselineInfo.DateCreated
         DateLastModified    = $ConfigurationBaselineInfo.DateLastModified
+        CollectionName      = $Collection.Name
         MembersCount        = $Members.count
         Members             = $Members
     }
