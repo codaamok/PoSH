@@ -20,7 +20,7 @@
 # copy n-1 n-2
 # copy n to n-1
 # service
-#Requires -Version 4
+#Requires -Version 5.1
 [CmdletBinding()]
 param (
     [Parameter(Mandatory=$true, Position = 0, HelpMessage="Package ID of the OS image.")]
