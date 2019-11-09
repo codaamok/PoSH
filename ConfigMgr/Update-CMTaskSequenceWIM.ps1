@@ -1,30 +1,34 @@
 <#
 .SYNOPSIS
-    Short description
+    Rotate and service Management Endpoint Configuration Manager Operating System image(s)
 .DESCRIPTION
-    Long description
+    Automate your OS image servicing process by using this script which leverages OSDBuilder. It will maintain 2 backups of the OS image source directory, not including the OS source directory itself.
+    For example, it will copy ("rotate") source path to _N-1 and _N-1 to _N-2.
 .EXAMPLE
-    PS C:\> <example usage>
-    Explanation of what the example does
+    PS C:\> .\Update-CMTaskSequenceWIM.ps1 -PackageID "P0101023"
+    Rotates and services the OS image P0101023
+.EXAMPLE
+    PS C:\> .\Update-CMTaskSequenceWIM.ps1 -PackageID @("P0101023","P0101029")
+    Rotates and services the OS images P0101023 and P0101029
 .INPUTS
     Inputs (if any)
 .OUTPUTS
     Output (if any)
 .NOTES
+    Author:     Adam Cook (@codaamok)
+    Updated:    09/11/2019
+    License:    GLP-3.0
+    Source:     
     TODO:
-        # perhaps function-ise the folder rotation
-    General notes
+        - Verify the package ID(s) the user has given us are OS images
+        - OS images only to OS upgrade images too?
+        - Check name of OSDBuilder
 #>
-# Overview:
-# delete n-2
-# copy n-1 n-2
-# copy n to n-1
-# service
 #Requires -Version 5.1
 [CmdletBinding()]
 param (
     [Parameter(Mandatory=$true, Position = 0, HelpMessage="Package ID of the OS image.")]
-    [String[]]
+    [string[]]
     $PackageID,
     [Parameter(Mandatory=$true, Position = 1, HelpMessage="ConfigMgr site server of the site site code.")]
     [ValidateScript({
@@ -84,14 +88,8 @@ param (
             [int32]$MaxNumOfRotatedLogs = 0,
             [parameter(Mandatory = $true, HelpMessage = 'A switch that enables the use of this function.')]
             [ValidateNotNullOrEmpty()]
-            [switch]$Enable,
-            [switch]$WriteHost
+            [switch]$Enable
         )
-    
-        # Runs this regardless of $Enable value
-        If ($WriteHost.IsPresent -eq $true) {
-            Write-Host $Value
-        }
     
         If ($Enable.IsPresent -eq $true) {
             # Determine log file location
@@ -185,7 +183,9 @@ param (
     $PSDefaultParameterValues["Write-CMLogEntry:MaxNumOfRotatedLogs"]=0
     #endregion
 
-    Write-CMLogEntry -Value "Starting" -Severity 1 -Component "Initilisation" -WriteHost
+    $Message = "Starting"
+    Write-Verbose -Message $Message
+    Write-CMLogEntry -Value $Message -Severity 1 -Component "Initilisation"
 
     #region Initialise variables
     try {
@@ -193,18 +193,22 @@ param (
             # Using a tmp variable because can't modify $SiteCode to fall outside of the ValidatePattern() attribute defined in the script's parameter block
             $tmp = Get-CimInstance -ComputerName $SiteServer -ClassName SMS_ProviderLocation -Namespace "ROOT\SMS" | Select-Object -ExpandProperty SiteCode
             If ($tmp.count -gt 1) {
-                Write-CMLogEntry -Value ("Found multiple site codes: {0}" -f ($tmp -join ", ")) -Severity 1 -Component "Initilisation" -WriteHost
+                $Message = "Found multiple site codes: {0}" -f ($tmp -join ", ")
+                Write-Verbose -Message $Message
+                Write-CMLogEntry -Value $Message -Severity 1 -Component "Initilisation"
                 throw
             } Else {
                 # Reasonable assurance now the value confines to what's defined in ValidatePattern() attribute, so go ahead and reassign
                 $SiteCode = $tmp
             }
-            Write-CMLogEntry -Value ("Using site code: {0}" -f $SiteCode) -Severity 1 -Component "Initilisation" -WriteHost
+            $Message = "Using site code: {0}" -f $SiteCode
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Initilisation"
         }
     }
     catch {
-        $Message = "Could not determine site code, please provide it using the -SiteCode parameter, quiting"
-        Write-CMLogEntry -Value $Message -Severity 1 -Component "Initilisation"
+        $Message = "Could not determine site code, please provide it using the -SiteCode parameter, quitting"
+        Write-CMLogEntry -Value $Message -Severity 2 -Component "Initilisation"
         throw $Message
     }
 
@@ -215,82 +219,113 @@ param (
 -Process {
     ForEach ($pkgID in $PackageID) {
 
-        Write-CMLogEntry -Value ("Working on: {0}" -f $pkgID) -Severity 1 -Component "Processing" -WriteHost
+        $Message = "Working on: {0}" -f $pkgID
+        Write-Verbose -Message $Message
+        Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
 
-        # Get source path, skip $pkgID if error
+        $Message = "Getting source path"
+        Write-Verbose $Message = "Getting source path"
+        Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
+
         try {
             $Query = "SELECT PkgSourcePath FROM SMS_ImagePackage WHERE PackageID=''" -f $pkgID
             $SourcePath = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ErrorAction Stop | Select-Object -ExpandProperty PkgSourcePath
         }
         catch {
-            $Message = "Failed to get source path for: {0} ({1}), skipping..." -f $pkgID, $Error[0].Exception.Message
-            Write-CMLogEntry -Value $Message -Severity 2 -Component "Processing" -WriteHost
-            break
+            $Message = "Failed to get source path, skipping {0} ({1})" -f $pkgID, $Error[0].Exception.Message
+            Write-Error -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 3 -Component "Processing"
+            continue
+        }
+
+        $Message = "Source path: {0}" -f $SourcePath
+        Write-Verbose -Message $Message
+        Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
+
+        if (-not(Test-Path -LiteralPath $SourcePath -PathType Container -ErrorAction SilentlyContinue)) {
+            $Message = "Path doesn't exist, skipping {0}" -f $pkgID
+            Write-Error -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 3 -Component "Processing"
+            continue
         }
         
-        $Nminus2 = "{0}_N-2" -f $PackageID
-        $Nminus1 = "{0}_N-1" -f $PackageID      
+        $Nminus2 = "{0}_N-2" -f $SourcePath
+        $Nminus1 = "{0}_N-1" -f $SourcePath      
 
-        Write-Verbose ("Checking if N-2 path exists: {0}" -f $Nminus2)
         if (Test-Path -LiteralPath $Nminus2 -PathType Container -ErrorAction SilentlyContinue) {
+            $Message = "N-2 path exists, attempting to delete ({0})" -f $Nminus2
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
+
             try {
                 Remove-Item -LiteralPath $Nminus2 -Recurse -Force -ErrorAction Stop
-                $Message = "Successfully deleted N-2: {0}" -f $Nminus2
-                Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing" -WriteHost
             }
             catch {
-                $Message = "Failed to delete N-2 folder: {0} ({1}), skipping..." -f $Nminus2, $Error[0].Exception.Message
-                Write-CMLogEntry -Value $Message -Severity 2 -Component "Processing" -WriteHost
-                break
+                $Message = "Failed to delete, skipping {0} ({1})" -f $pkgID, $error[0].Exception.Message
+                Write-Error -Message $Message
+                Write-CMLogEntry -Value $Message -Severity 3 -Component "Processing"
+                continue
             } 
+
+            $Message = "Successfully deleted"
+            Write-Verbose -Message $Verbose
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
         }
         else {
-            Write-Verbose ("N-2 path does not exist: {0}" -f $Nminus2)
+            $Message = "N-2 path does not exist: {0}" -f $Nminus2
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
         }
 
-        Write-Verbose ("Checking if N-1 path exists: {0}" -f $Nminus1)
         if (Test-Path -LiteralPath $Nminus1 -PathType Container -ErrorAction SilentlyContinue) {
+            $Message = "N-1 path exists, attempting move to N-2 ({0})" -f $Nminus1
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
+
             try {
                 Move-Item -LiteralPath $Nminus1 -Destination $Nminus2 -Force -ErrorAction Stop
-                $Message = "Successfully moved N-1 to N-2: {0} -> {1}" -f $Nminus1, $Nminus2
-                Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing" -WriteHost
             }
             catch {
-                $Message = "Failed to move N-1 folder to N-2: {0} -> {1} ({2}), skipping..." -f $Nminus1, $Nminus2, $Error[0].Exception.Message
-                Write-CMLogEntry -Value $Message -Severity 2 -Component "Processing" -WriteHost
-                break
-            } 
-        }
-        else {
-            Write-Verbose ("N-1 path does not exist: {0}" -f $Nminus1)
-        }
-
-        Write-Verbose ("Checking if source path for {0} exists: {1}" -f $pkgID, $SourcePath)
-        if (Test-Path -LiteralPath $SourcePath -PathType Container -ErrorAction SilentlyContinue) {
-            try {
-                Move-Item -LiteralPath $SourcePath -Destination $Nminus1 -Force -ErrorAction Stop
-                $Message = "Successfully moved source path for {0} to N-1: {1} -> {2}" -f $pkgID, $SourcePath, $Nminus1
-                Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing" -WriteHost
+                $Message = "Failed to move, skipping {0} ({1})" -f $pkgID, $error[0].Exception.Message
+                Write-Verbose -Message $Message
+                Write-CMLogEntry -Value $Message -Severity 3 -Component "Processing"
+                continue
             }
-            catch {
-                $Message = "Failed to move source path for {0} folder to N-1: {1} -> {2} ({3}), skipping..." -f $pkgID, $SourcePath, $Nminus1, $Error[0].Exception.Message
-                Write-CMLogEntry -Value $Message -Severity 2 -Component "Processing" -WriteHost
-                break
-            } 
+
+            $Message = "Successfully moved N-1 to N-2"
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
         }
         else {
-            $Message = "Source path for {0} not exist: {1}, skipping..." -f $pkgID, $SourcePath
-            Write-CMLogEntry -Value $Message -Severity 2 -Component "Processing" -WriteHost
-            break
+            $Message = "N-1 path does not exist: {0}" -f $Nminus1
+            Write-Verbose -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
         }
 
-        # Delete n-2
-        # Move n-1 to n-2
-        # Move n to n-1
+        $Message = "Attempting to copy N-0 to N-1"
+        Write-Verbose -Message $Message
+        Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
 
-        # Service
+        try {
+            Copy-Item -LiteralPath $SourcePath -Destination $Nminus1 -Force -Recurse -ErrorAction Stop
+        }
+        catch {
+            $Message = "Failed to copy, skipping {0} ({1})" -f $pkgID, $error[0].Exception.Message
+            Write-Error -Message $Message
+            Write-CMLogEntry -Value $Message -Severity 3 -Component "Processing"
+            continue
+        } 
+
+        $Message = "Successfully copied"
+        Write-Verbose -Message $Message
+        Write-CMLogEntry -Value $Message -Severity 1 -Component "Processing"
+
+        # Service..
+
     }
 }
 -End {
-    Write-CMLogEntry -Value "Finished" -Severity 1 -Component "Exit"
+    $Message = "Finished"
+    Write-Verbose -Message $Message
+    Write-CMLogEntry -Value $Message -Severity 1 -Component "Exit"
 }
