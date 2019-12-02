@@ -15,6 +15,7 @@ $sccmRole = Get-LabPostInstallationActivity -CustomRole CM-1902 -Properties @{
     SccmSiteCode = "CM1"
     SccmBinariesDirectory = "$labSources\SoftwarePackages\CM1902"
     SccmPreReqsDirectory = "$labSources\SoftwarePackages\CMPreReqs"
+    SccmProductId = "Eval" # Can be "Eval" or a product key
     AdkDownloadPath = "$labSources\SoftwarePackages\ADK"
     WinPEDownloadPath = "$labSources\SoftwarePackages\WinPE"
     SqlServerName = 'CM01'
@@ -23,6 +24,9 @@ $sccmRole = Get-LabPostInstallationActivity -CustomRole CM-1902 -Properties @{
 $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{ 
     Collation = 'SQL_Latin1_General_CP1_CI_AS'
 }
+
+Add-LabDiskDefinition -Name "CM01-SQL-01" -DiskSizeInGb 30GB -Label "SQL-01" -DriveLetter "E"
+Add-LabDiskDefinition -Name "CM01-DATA-01" -DiskSizeInGb 50GB -Label "DATA-01" -DriveLetter "F"
 
 Add-LabMachineDefinition -Name CM01 -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -PostInstallationActivity $sccmRole -Processors 4
 

@@ -7,6 +7,10 @@ param(
     [string]$SccmSiteCode,
 
     [Parameter(Mandatory)]
+    [ValidatePattern('^EVAL$|^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$', Options = 'IgnoreCase')]
+    [string]$SccmProductId,
+
+    [Parameter(Mandatory)]
     [string]$SccmBinariesDirectory,
 
     [Parameter(Mandatory)]
@@ -45,6 +49,10 @@ if ($SccmSiteCode -notmatch '^[A-Za-z0-9]{3}$')
 $script = Get-Command -Name $PSScriptRoot\Invoke-DownloadADK.ps1
 $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
 & $PSScriptRoot\Invoke-DownloadADK.ps1 @param
+
+$script = Get-Command -Name $PSScriptRoot\Invoke-DownloadCM.ps1
+$param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
+& $PSScriptRoot\Invoke-DownloadCM.ps1 @param
 
 $script = Get-Command -Name $PSScriptRoot\Invoke-InstallCM.ps1
 $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters

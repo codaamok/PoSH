@@ -27,6 +27,9 @@ param(
 
     [Parameter(Mandatory)]
     [string]$SccmSiteCode,
+
+    [Parameter(Mandatory)]
+    [string]$SccmProductId,
         
     [Parameter(Mandatory)]
     [string]$SqlServerName
@@ -46,6 +49,9 @@ function Install-CMSite {
 
         [Parameter(Mandatory)]
         [string]$SccmSiteCode,
+
+        [Parameter(Mandatory)]
+        [string]$SccmProductId,
         
         [Parameter(Mandatory)]
         [string]$SqlServerName
@@ -96,6 +102,11 @@ function Install-CMSite {
         $dataVolume = Get-Disk | Where-Object -Property OperationalStatus -eq Offline
         $dataVolume | Set-Disk -IsOffline $false
         $dataVolume | Set-Disk -IsReadOnly $false
+    }
+
+    #Set NO_SMS_ON_DRIVE.SMS
+    Invoke-LabCommand -ActivityName 'Creating NO_SMS_ON_DRIVE.SMS files' -ComputerName $SccmServerName -ScriptBlock {
+        New-Item -Path "C:\","E:\" -Name "NO_SMS_ON_DRIVE.SMS" -ItemType "File"
     }
     
     #Copy the SCCM Binaries
@@ -217,7 +228,7 @@ function Install-CMSite {
 Action=InstallPrimarySite
       
 [Options]
-ProductID=EVAL
+ProductID=$SccmProductId
 SiteCode=$SccmSiteCode
 SiteName=Primary Site 1
 SMSInstallDir=C:\Program Files\Microsoft Configuration Manager
@@ -239,8 +250,8 @@ JoinCEIP=0
 SQLServerName=$SqlServerFqdn
 DatabaseName=CM_$SccmSiteCode
 SQLSSBPort=4022
-SQLDataFilePath=C:\CMSQL\SQLDATA\
-SQLLogFilePath=C:\CMSQL\SQLLOGS\
+SQLDataFilePath=E:\SQL\DATA\
+SQLLogFilePath=E:\SQL\LOGS\
        
 [CloudConnectorOptions]
 CloudConnector=0

@@ -6,8 +6,8 @@
     [string]$SccmPreReqsDirectory
 )
 
-$sccm1702Url = 'http://download.microsoft.com/download/1/B/C/1BCADBD7-47F6-40BB-8B1F-0B2D9B51B289/SC_Configmgr_SCEP_1902.exe'
-$sccmSetup = Get-LabInternetFile -Uri $sccm1702Url -Path $labSources\SoftwarePackages -PassThru
+$sccmUrl = 'http://download.microsoft.com/download/1/B/C/1BCADBD7-47F6-40BB-8B1F-0B2D9B51B289/SC_Configmgr_SCEP_1902.exe'
+$sccmSetup = Get-LabInternetFile -Uri $sccmUrl -Path $labSources\SoftwarePackages -PassThru
 
 if (-not (Test-Path -Path $SccmBinariesDirectory))
 {
@@ -27,7 +27,7 @@ else
 
 if (-not (Test-Path -Path $SccmPreReqsDirectory))
 {
-    $p = Start-Process -FilePath $labSources\SoftwarePackages\SCCM1702\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList $SccmPreReqsDirectory -PassThru
+    $p = Start-Process -FilePath $SccmBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList $SccmPreReqsDirectory -PassThru
     Write-ScreenInfo "Waiting for downloading the SCCM Prerequisites to '$SccmPreReqsDirectory'" -NoNewLine
     while (-not $p.HasExited) {
         Write-ScreenInfo '.' -NoNewLine
