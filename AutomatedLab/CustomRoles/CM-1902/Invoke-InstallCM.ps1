@@ -297,4 +297,4 @@ UseProxy=0
 Write-ScreenInfo ''
 $lab = Import-Lab -Name $data.Name -NoValidation -NoDisplay -PassThru
 
-Install-CMSite -SccmServerName $ComputerName -SccmBinariesDirectory $SCCMBinariesDirectory -SccmPreReqsDirectory $SCCMPreReqsDirectory -SccmSiteCode $SCCMSiteCode -SqlServerName $SqlServerName
+Install-CMSite -SccmServerName $ComputerName -SccmBinariesDirectory $SCCMBinariesDirectory -SccmPreReqsDirectory $SCCMPreReqsDirectory -SccmSiteCode $SCCMSiteCode -SccmProductId $SccmProductId -SqlServerName $SqlServerName
