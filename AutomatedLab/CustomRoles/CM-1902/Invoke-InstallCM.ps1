@@ -275,8 +275,8 @@ UseProxy=0
     
     Invoke-LabCommand -ActivityName 'Create Folders for SQL DB' -ComputerName $sqlServer -ScriptBlock {
         #SQL Server does not like creating databases without the directories already existing, so make sure to create them first
-        New-Item -Path 'C:\CMSQL\SQLDATA' -ItemType Directory -Force | Out-Null
-        New-Item -Path 'C:\CMSQL\SQLLOGS' -ItemType Directory -Force | Out-Null
+        New-Item -Path 'E:\SQL\DATA\' -ItemType Directory -Force | Out-Null
+        New-Item -Path 'E:\SQL\LOGS\' -ItemType Directory -Force | Out-Null
         
         if (-not (Get-LocalGroupMember -Group Administrators -Member $sccmComputerAccount -ErrorAction SilentlyContinue))
         {
