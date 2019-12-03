@@ -126,7 +126,7 @@ function Install-CMSite {
         } else {
             Write-Output "does not exist!"
         }
-    } -Variable VMSccmBinariesDirectory
+    } -Variable (Get-Variable -Name VMSccmBinariesDirectory)
 
     #Need to execute this command on the Domain Controller, since it has the AD Powershell cmdlets available
     #Create the Necessary OU and permissions for the SCCM container in AD
