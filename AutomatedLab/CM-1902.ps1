@@ -28,7 +28,7 @@ $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{
 Add-LabDiskDefinition -Name "CM01-SQL-01" -DiskSizeInGb 30GB -Label "SQL-01" -DriveLetter "E"
 Add-LabDiskDefinition -Name "CM01-DATA-01" -DiskSizeInGb 50GB -Label "DATA-01" -DriveLetter "F"
 
-Add-LabMachineDefinition -Name CM01 -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -PostInstallationActivity $sccmRole -Processors 4
+Add-LabMachineDefinition -Name CM01 -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -PostInstallationActivity $sccmRole -Processors 4 -DiskName "CM01-SQL-01", "CM01-DATA-01"
 
 Install-Lab
 
