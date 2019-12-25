@@ -7,6 +7,9 @@ param(
     [string]$SccmSiteCode,
 
     [Parameter(Mandatory)]
+    [string]$SccmSiteName,
+
+    [Parameter(Mandatory)]
     [ValidatePattern('^EVAL$|^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$', Options = 'IgnoreCase')]
     [string]$SccmProductId,
 
@@ -34,7 +37,7 @@ if (-not $sqlServer)
     return
 }    
 
-if ($sccmServer.OperatingSystem.Version -lt 10.0 -or $SqlServer.OperatingSystem.Version -lt 10.0)
+if ($sccmServer.OperatingSystem.Version -lt 10.0 -or $sqlServer.OperatingSystem.Version -lt 10.0)
 {
     Write-Error "The SCCM role requires the SCCM server and the SQL Server to be Windows 2016 or higher."
     return
@@ -57,3 +60,7 @@ $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
 $script = Get-Command -Name $PSScriptRoot\Invoke-InstallCM.ps1
 $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
 & $PSScriptRoot\Invoke-InstallCM.ps1 @param
+
+Get-LabVM | ForEach-Object {
+    Dismount-LabIsoImage -ComputerName $_.Name -SupressOutput
+}
