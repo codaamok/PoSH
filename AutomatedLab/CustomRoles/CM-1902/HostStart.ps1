@@ -1,32 +1,40 @@
-param(
+[CmdletBinding()]
+Param (
     
     [Parameter(Mandatory)]
-    [string]$ComputerName,
+    [String]$ComputerName,
     
     [Parameter(Mandatory)]
-    [string]$SccmSiteCode,
+    [String]$SccmSiteCode,
 
     [Parameter(Mandatory)]
-    [string]$SccmSiteName,
+    [String]$SccmSiteName,
 
     [Parameter(Mandatory)]
     [ValidatePattern('^EVAL$|^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$', Options = 'IgnoreCase')]
-    [string]$SccmProductId,
+    [String]$SccmProductId,
 
     [Parameter(Mandatory)]
-    [string]$SccmBinariesDirectory,
+    [String]$SccmBinariesDirectory,
 
     [Parameter(Mandatory)]
-    [string]$SccmPreReqsDirectory,
+    [String]$SccmPreReqsDirectory,
 
     [Parameter(Mandatory)]
-    [string]$AdkDownloadPath,
+    [String]$AdkDownloadPath,
 
     [Parameter(Mandatory)]
-    [string]$WinPEDownloadPath,
+    [String]$WinPEDownloadPath,
 
     [Parameter(Mandatory)]
-    [string]$SqlServerName
+    [String]$LogViewer,
+
+    [Parameter(Mandatory)]
+    [String]$Version,
+
+    [Parameter(Mandatory)]
+    [String]$SqlServerName
+
 )
 
 $sqlServer = Get-LabVM -Role SQLServer | Where-Object Name -eq $SqlServerName
@@ -60,6 +68,14 @@ $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
 $script = Get-Command -Name $PSScriptRoot\Invoke-InstallCM.ps1
 $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
 & $PSScriptRoot\Invoke-InstallCM.ps1 @param
+
+$script = Get-Command -Name $PSScriptRoot\Invoke-UpdateCM.ps1
+$param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
+& $PSScriptRoot\Invoke-UpdateCM.ps1 @param
+
+$script = Get-Command -Name $PSScriptRoot\Invoke-CustomiseCM.ps1
+$param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
+& $PSScriptRoot\Invoke-CustomiseCM.ps1 @param
 
 Get-LabVM | ForEach-Object {
     Dismount-LabIsoImage -ComputerName $_.Name -SupressOutput

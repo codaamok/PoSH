@@ -1,0 +1,30 @@
+This document uses this extension: https://github.com/sandy081/vscode-todotasks
+
+CM-1902:
+    Testing command line: 
+        C:\LabSources\MyScripts\CM-1902.ps1 -LabName "CMLab01" -VMPath "D:\AutomatedLab\" -Domain "acc.lab" -AddressSpace "192.168.100.0/24" -SiteCode "ACC" -SiteName "Adam Cook" -DCHostname "DC01" -DCCPU 2 -CMHostname "CM01" -CMCPU 4 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\LabSources\MyScripts\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2016" -ExcludePostInstallations
+
+        C:\LabSources\MyScripts\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -CMVersion "1910" -LogViewer "OneTrace" -OSVersion "2016" -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\LabSources\MyScripts\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2019" -DCMemory 2GB -CMMemory 8GB -AdminUser "Adam" -AdminPass "Orange123" 
+    Tasks:
+        ✔ Use jobs and handle exceptions with Receve-Job -ErrorAction Stop @high @done (28/12/2019, 23:49:39)
+        ✔ Replace all .Exception.Message with .Message @high @done (28/12/2019, 23:48:50)
+        ✔ Ensure all jobs have Wait-LWLabJob @high @done (28/12/2019, 23:48:53)
+        ✔ Remove splatting in Install-CMUpdate @high @done (28/12/2019, 23:49:37)
+        ✔ Offer target site version @low @done (01/01/2020, 16:31:22)
+            ✔ Optionally update @low @done (01/01/2020, 16:31:23)
+        ✘ Notification when complete @low @cancelled (01/01/2020, 21:27:11) cancelled as AutomatedLab already delivers toast notifications. Extra stuff e.g. mail and/or Teams would be overkill IMO.
+        ☐ Test vmware @low 
+        ✔ Optionally bypass domain and hostname check @done (30/12/2019, 17:19:22)
+        ✔ Based on switch, only trigger postinstall actions @done (30/12/2019, 17:19:20)
+        ✔ Optionally configure CMTrace or OneTrace (OneTrace is only on 1906 or later) @done (30/12/2019, 17:19:08)
+        ✔ If not updates are available (L943 Invoke-InstallCM.ps1) then customisations do not apply @done (01/01/2020, 16:31:17)
+        ✔ When should I throw instead of exit? Ask yourslf, are all the throws, returns and exits necessary? @done (01/01/2020, 16:30:53)
+        ☐ Fill out comment based help
+            ☐ Explain parameter sets
+        ✔ Optional auto logon @done (05/01/2020, 20:54:20)
+        ✔ Ability to change username / password @done (05/01/2020, 20:54:21)
+        ✔ Dynamic memory @done (05/01/2020, 20:39:05)
