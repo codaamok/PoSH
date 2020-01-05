@@ -1,16 +1,127 @@
 <#
 .SYNOPSIS
-    Short description
+    An AutomatedLab script for Configuration Manager 1902 with support for installing updates.
 .DESCRIPTION
-    Long description
+    An AutomatedLab script for Configuration Manager 1902 with support for installing updates.
 .EXAMPLE
-    PS C:\> <example usage>
-    Explanation of what the example does
-.INPUTS
-    Inputs (if any)
-.OUTPUTS
-    Output (if any)
+    PS C:\> .\CM-1902.ps1 
+
+    Builds a lab with the following properties:
+        - 1x AutomatedLab:
+            Name: "CMLab01"
+            Path: <drive>:\AutomatedLab-VMs where <drive> is the fastest drive available
+        - 1x Active Directory domain:
+            Domain: "winadmins.lab"
+            Username: "Administrator"
+            Password: "Somepass1"
+            AddressSpace: An unused and available subnet increasing 192.168.1.0 by 1 until one is found.
+            ExternalVMSwitch: Allows physical network access via Hyper-V external switch named "Internet".
+        - 2x virtual machines:
+            Operating System: Windows Server 2019 (Desktop Experience)
+            1x Domain Controller:
+                Name: "DC01"
+                vCPU: 2
+                Max memory: 2GB
+                Roles: "RootDC", "Routing"
+            1x Configuration Manager:
+                Name: "CM01"
+                vCPU: 4
+                Max memory: 8GB
+                Roles: "SQLServer2017"
+                CustomRoles: "CM-1902"
+                SiteCode: "P01"
+                SiteName: "CMLab01"
+                Version: "Latest"
+                LogViewer: "OneTrace"
+
+    The following customsations are applied to the ConfigMgr server post install:
+        - The ConfigMgr console is updated
+        - Shortcuts on desktop:
+            - Console
+            - Logs directory
+            - Tools directory
+            - Support Center
+.EXAMPLE
+    PS C:\> .\CM-1902.ps1 
+    Use an example that builds the base first with all the skips etc then another for just PostInstallations
+.PARAMETER LabName
+    The name of the AutomatedLab lab created by this script.
+.PARAMETER VMPath
+    The path where you would like to save the VM data (.vhdx and .vmcx files) for this lab. 
+    The scripts appends the lab name to the path you give. For example, if -LabName is "CMLab01" and -VMPath is "C:\VMs" then the VMs will be saved in "C:\VMs\CMLab01".
+.PARAMETER Domain
+    The Active Directory domain for this lab.
+    If the domain resolves to an IP address, a terminating error is thrown. Use the -SkipDomainCheck switch to continue even if the domain resolves to an IP address.
+.PARAMETER AdminUser
+    The username of a Domain Administratior within your lab. Also the account used for installing Active Directory and other software packages in this lab.
+.PARAMETER AdminPass
+    The password for the AdminUser.
+.PARAMETER AddressSpace
+    The IP subnet this lab uses. 
+    Omitting this parameter forces AutomatedLab to find new subnets by simply increasing 192.168.1.0 until a free network is found. Free means that there is no virtual network switch with an IP address in the range of the subnet and the subnet is not routable. If these conditions are not met, the subnet is incremented again.
+.PARAMETER ExternalVMSwitchName
+    The name of the External Hyper-V switch. The given name must be of an existing Hyper-V switch and it must be of 'External' type.
+    If you do not want this lab to have physical network access, use the -NoInternetAccess switch.
+    You cannot use this parameter with -NoInternetAccess.
+.PARAMETER SiteCode
+    Configuration Manager site code.
+.PARAMETER SiteName
+    Configuration Manager site name.
+.PARAMETER CMVersion
+    The target Configuration version you wish to install.
+    This script first installs 1902 baseline and then installs updates. If -CMVersion is "1902" then the update process is skipped.
+    Acceptable values are "1902", "1906", "1910" or "Latest".
+.PARAMETER OSVersion
+    Operating System version for all VMs in this lab.
+    Acceptable values are "2016" or "2019". Ensure you have the corresponding ISO media in your LabSources\ISOs folder.
+.PARAMETER DCHostname
+    Hostname for this lab's Domain Controller.
+.PARAMETER DCCPU
+    Number of vCPUs to assign the Domain Controller.
+.PARAMETER DCMemory
+    Maximum memory capacity to assign the Domain Controller.
+    Must be greater than 1GB.
+.PARAMETER CMHostname
+    Hostname for this lab's Configuration Manager server.
+.PARAMETER CMCPU
+    Number of vCPUs to assign the Domain Controller.
+.PARAMETER CMMemory
+    Maximum memory capacity to assign the Configuration Manager server.
+    Must be greater than 1GB.
+.PARAMETER LogViewer
+    The default .log and .lo_ file viewer for only the Configuration Manager server.
+    OneTrace was introduced in 1906 so if -LogViewer is "OneTrace" and -CMVersion is "1902" or -NoInternetAccess is specified, then -LogViewer will revert to "CMTrace".
+    Acceptable values are "CMTrace" or "OneTrace".
+.PARAMETER SkipDomainCheck
+    While there's nothing technically stopping you from installing Active Directory using a domain that already exists and is out of your control, you probably shouldn't. So I've implemented blocks in case -Domain does resolve.
+    Specifying this switch skips the check and continues to build the lab.
+.PARAMETER SkipLabNameCheck
+    AutomatedLab lab names must be unique. If -LabName is equal to a lab name that already exists, a terminating error is thrown.
+    Specifying this switch skips the check and continues to build the lab.
+.PARAMETER SkipHostnameCheck
+    If a DNS record exists and resolves to an IP address for either $CMHostname or $DCHostname, a terminating error is thrown.
+    Specifying this switch skips the check and continues to build the lab.
+.PARAMETER DoNotDownloadWMIEv2
+    By default, this scripts downloads WmiExplorer V2 to LabSources\Tools directory so it's available on all lab VMs.
+    Specifying this skips the download.
+    See https://github.com/vinaypamnani/wmie2
+.PARAMETER PostInstallations
+    Specifying this switch passes the -PostInstallations and -NoValidation switches to Install-Lab.
+    See the examples for how and why you would use this.
+    You cannot use this parameter with -ExcludePostInstallations.
+.PARAMETER ExcludePostInstallations
+    Specifying this switch creates the Domain Controller and Configuration Manager VMs, installs Active Directory on the DC and SQL on the CM server but not Configuration Manager.
+    See the examples for how and why you would use this.
+    You cannot use this parameter with -PostInstallations.
+.PARAMETER NoInternetAccess
+    Specifying this switch keeps lab traffic local with no access to the external/physical network.
+    You cannot use this parameter with -ExternalVMSwitchName.
+.PARAMETER AutoLogon
+    Specify this to enable auto logon for all VMs in this lab.
+
 .NOTES
+    Author:       Adam Cook (@codaamok)
+    Date created: 2019-01-05
 #>
 #Requires -Version 5.1 -Modules "AutomatedLab", "Hyper-V"
 [Cmdletbinding()]
@@ -22,7 +133,7 @@ Param (
     [ValidateScript({
         if (!([System.IO.Directory]::Exists($_))) { throw "Invalid path or access denied" } elseif (!($_ | Test-Path -PathType Container)) { throw "Value must be a directory, not a file" }; return $true
     })]
-    [String]$VMPath = "C:\AutomatedLab",
+    [String]$VMPath,
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
@@ -133,13 +244,24 @@ switch ($true) {
         }
     }
     (-not $SkipDomainCheck.IsPresent) {
-        if (Test-Connection $_ -Count 1 -ErrorAction "SilentlyContinue") { 
-            throw ("Domain '{0}' already exists, choose a different domainz" -f $Domain)
+        try {
+            [System.Net.Dns]::Resolve($Domain) | Out-Null
+            throw ("Domain '{0}' resolves, choose a different domain" -f $Domain)
+        }
+        catch {
+            # resume
         }
     }
     (-not $SkipHostnameCheck.IsPresent) {
-        if (Test-Connection $DCHostname -Count 1 -ErrorAction "SilentlyContinue") { throw ("Host '{0}' already exists, choose a different name" -f $DCHostname)}
-        if (Test-Connection $CMHostname -Count 1 -ErrorAction "SilentlyContinue") { throw ("Host '{0}' already exists, choose a different name" -f $CMHostname)}
+        ForEach ($Hostname in @($DCHostname,$CMHostname)) {
+            try {
+                [System.Net.Dns]::Resolve($Hostname) | Out-Null
+                throw ("Host '{0}' resolves, choose a different hostname" -f $Hostname)
+            }
+            catch {
+                continue
+            }
+        }
     }
     # I know I can use ParameterSets, but I want to be able to execute this script without any parameters too, so this is cleaner.
     ($PostInstallations.IsPresent -And $ExcludePostInstallations.IsPresent) {
@@ -149,10 +271,10 @@ switch ($true) {
         throw "Can not use -NoInternetAccess and -ExternalVMSwitchName together"
     }
     ((Get-VMSwitch).Name -notcontains $ExternalVMSwitchName) { 
-        throw "Hyper-V virtual switch '$ExternalVMSwitchName' does not exist"
+        throw ("Hyper-V virtual switch '{0}' does not exist" -f $ExternalVMSwitchName)
     }
     ((Get-VMSwitch -Name $ExternalVMSwitchName).SwitchType -ne "External") { 
-        throw "Hyper-V virtual switch '$ExternalVMSwitchName' is not of External type" 
+        throw ("Hyper-V virtual switch '{0}' is not of External type" -f $ExternalVMSwitchName)
     }
 }
 #endregion
@@ -222,6 +344,13 @@ if (-not $DoNotDownloadWMIEv2.IsPresent) {
     else {
         Write-ScreenInfo -Message "WmiExplorer.exe already exists, skipping the download. Delete the file '{0}' if you want to download again."
     }
+}
+#endregion
+
+#region Forcing 1902 is -NoInternetAccess is passed
+if ($NoInternetAccess.IsPresent -And $CMVersion -ne "1902") {
+    Write-ScreenInfo -Message "Switch -NoInternetAccess is passed therefore will not be able to update ConfigMgr, forcing target version to be '1902' to skip checking for updates later"
+    $CMVersion = "1902"
 }
 #endregion
 
