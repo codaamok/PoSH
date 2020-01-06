@@ -23,7 +23,7 @@ CM-1902:
         ✔ Optionally configure CMTrace or OneTrace (OneTrace is only on 1906 or later) @done (30/12/2019, 17:19:08)
         ✔ If not updates are available (L943 Invoke-InstallCM.ps1) then customisations do not apply @done (01/01/2020, 16:31:17)
         ✔ When should I throw instead of exit? Ask yourslf, are all the throws, returns and exits necessary? @done (01/01/2020, 16:30:53)
-        ☐ Fill out comment based help
+        ✔ Fill out comment based help @done (06/01/2020, 20:56:30)
             ✘ Explain parameter sets @cancelled (05/01/2020, 21:21:42) cancelled as I rmeoved ParameterSets in favour of being able to execute script witthout mandatory parameters
         ✔ Optional auto logon @done (05/01/2020, 20:54:20)
         ✔ Ability to change username / password @done (05/01/2020, 20:54:21)
