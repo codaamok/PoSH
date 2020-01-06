@@ -9,7 +9,7 @@
     Builds a lab with the following properties:
         - 1x AutomatedLab:
             Name: "CMLab01"
-            Path: <drive>:\AutomatedLab-VMs where <drive> is the fastest drive available
+            VMPath: <drive>:\AutomatedLab-VMs where <drive> is the fastest drive available
         - 1x Active Directory domain:
             Domain: "winadmins.lab"
             Username: "Administrator"
@@ -41,9 +41,23 @@
             - Logs directory
             - Tools directory
             - Support Center
+
 .EXAMPLE
-    PS C:\> .\CM-1902.ps1 
-    Use an example that builds the base first with all the skips etc then another for just PostInstallations
+    PS C:\> .\CM-1902.ps1 -ExcludePostInstallations
+
+    Builds a lab with the the same properties as the first example, with the exception that it does not install Configuration Manager. 
+    
+    In other words, the VMs DC01 and CM01 will be created, Windows installed, AD installed on DC01 and SQL installed on CM01 and that's it.
+    
+    This is useful if you want the opportunity the snapshot/checkpoint the laptop VMs before installing Configuration Manager on CM01.
+
+    See the next example on how to trigger the remainder of the isntall tasks.
+
+.EXAMPLE
+    PS C:\> .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+    Following on from the previous example, this executes the post installation tasks which is to execute the CustomRole CM-1902 scripts on CM01.
+
 .PARAMETER LabName
     The name of the AutomatedLab lab created by this script.
 .PARAMETER VMPath
@@ -57,7 +71,7 @@
 .PARAMETER AdminPass
     The password for the AdminUser.
 .PARAMETER AddressSpace
-    The IP subnet this lab uses. 
+    The IP subnet this lab uses, accepted syntax for the value is slash notation, for example 192.168.1.0/24.
     Omitting this parameter forces AutomatedLab to find new subnets by simply increasing 192.168.1.0 until a free network is found. Free means that there is no virtual network switch with an IP address in the range of the subnet and the subnet is not routable. If these conditions are not met, the subnet is incremented again.
 .PARAMETER ExternalVMSwitchName
     The name of the External Hyper-V switch. The given name must be of an existing Hyper-V switch and it must be of 'External' type.
