@@ -132,10 +132,10 @@
     You cannot use this parameter with -ExternalVMSwitchName.
 .PARAMETER AutoLogon
     Specify this to enable auto logon for all VMs in this lab.
-
 .NOTES
     Author:       Adam Cook (@codaamok)
     Date created: 2019-01-05
+    Source:       https://github.com/codaamok/PoSH/AutomatedLab
 #>
 #Requires -Version 5.1 -Modules "AutomatedLab", "Hyper-V"
 [Cmdletbinding()]
