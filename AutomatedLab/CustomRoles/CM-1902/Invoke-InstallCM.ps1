@@ -443,25 +443,26 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
-    #region Create folders for SQL db
-    Write-ScreenInfo -Message "Creating folders for SQL db" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Creating folders for SQL db" -Variable (Get-Variable -Name "sccmComputerAccount") -ScriptBlock {
+    #region Create folders for SQL database and WSUS
+    Write-ScreenInfo -Message "Creating folders for SQL database and WSUS" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Creating folders for SQL database and WSUS" -Variable (Get-Variable -Name "sccmComputerAccount") -ScriptBlock {
         New-Item -Path 'F:\DATA\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
         New-Item -Path 'F:\LOGS\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
+        New-Item -Path 'G:\WSUS\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
     }
     Wait-LWLabJob -Job $job
     try {
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
     catch {
-        Write-ScreenInfo -Message ("Failed to create folders for SQL db ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        Write-ScreenInfo -Message ("Failed to create folders for SQL database or WSUS ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
         throw $ReceiveJobErr
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
     
-    #region Copy CM binaries, pre-reqs, ADK and WinPE
-    Write-ScreenInfo -Message "Copying CM binaries, pre-reqs, ADK and WinPE" -TaskStart
+    #region Copy CM binaries, SQL native client installer, pre-reqs, ADK and WinPE
+    Write-ScreenInfo -Message "Copying CM binaries, SQL native client installer, pre-reqs, ADK and WinPE" -TaskStart
     try {
         Copy-LabFileItem -Path $SccmBinariesDirectory -DestinationFolderPath $VMInstallDirectory
     }
@@ -482,6 +483,7 @@ UseProxy=0
         (Join-Path -Path $downloadTargetFolder -ChildPath "ADK"),
         (Join-Path -Path $downloadTargetFolder -ChildPath "WinPE"),
         (Join-Path -Path $downloadTargetFolder -ChildPath "ConfigMgrUnattend.ini")
+        (Join-Path -Path $downloadTargetFolder -ChildPath "sqlncli.msi")
     )
     ForEach ($Path in $Paths) {
         try {
@@ -492,6 +494,21 @@ UseProxy=0
             Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
             throw $Message
         }
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Install SQL Server Native Client
+    Write-ScreenInfo -Message "Installing SQL Server Native Client" -TaskStart
+    $Path = Join-Path -Path $VMInstallDirectory -ChildPath "sqlncli.msi"
+    $job = Install-LabSoftwarePackage -LocalPath $Path -CommandLine "/qn /norestart" -ExpectedReturnCodes 0
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        Write-ScreenInfo -Message ("Failed to install SQL Server Native Client ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
@@ -680,6 +697,42 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
+    #region Install WSUS
+    Write-ScreenInfo -Message "Installing WSUS" -TaskStart
+    $job = Install-LabWindowsFeature -FeatureName "UpdateServices,UpdateServices-Services,UpdateServices-DB,UpdateServices-RSAT,UpdateServices-API,UpdateServices-UI"
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        Write-ScreenInfo -Message ("Failed installing WSUS ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Restart
+    Write-ScreenInfo -Message "Restarting server" -TaskStart
+    Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Run WSUS post configuration tasks
+    Write-ScreenInfo -Message "Running WSUS post configuration tasks" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Running WSUS post configuration tasks" -Variable (Get-Variable "SqlServerName") -ScriptBlock {
+        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "SQL_INSTANCE_NAME='$SqlServerName\MSSQLSERVER'", "CONTENT_DIR='G:\WSUS'" -Wait -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        Write-ScreenInfo -Message ("Failed running WSUS post configuration tasks ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
     #region Install additional features
     Write-ScreenInfo -Message "Installing additional features (1/2)" -TaskStart
     $job = Install-LabWindowsFeature -FeatureName "FS-FileServer,Web-Mgmt-Tools,Web-Mgmt-Console,Web-Mgmt-Compat,Web-Metabase,Web-WMI,Web-WebServer,Web-Common-Http,Web-Default-Doc,Web-Dir-Browsing,Web-Http-Errors,Web-Static-Content,Web-Http-Redirect,Web-Health,Web-Http-Logging,Web-Log-Libraries,Web-Request-Monitor,Web-Http-Tracing,Web-Performance,Web-Stat-Compression,Web-Dyn-Compression,Web-Security,Web-Filtering,Web-Windows-Auth,Web-App-Dev,Web-Net-Ext,Web-Net-Ext45,Web-Asp-Net,Web-Asp-Net45,Web-ISAPI-Ext,Web-ISAPI-Filter"
@@ -772,6 +825,23 @@ UseProxy=0
     #region Restart
     Write-ScreenInfo -Message "Restarting server" -TaskStart
     Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Install SUP
+    Write-ScreenInfo -Message "Installing Software Update Point" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "sccmServerFqdn") -ScriptBlock {
+        Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $sccmServerFqdn -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        $Message = "Failed to install Software Update Point ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 }

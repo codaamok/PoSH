@@ -16,12 +16,12 @@ if (Test-Path -Path $ADKExePath) {
     Write-ScreenInfo -Message ("ADK installer exists, delete '{0}' if you want to download again" -f $ADKExePath)
 }
 
-$ADKURL = 'https://go.microsoft.com/fwlink/?linkid=2086042'
+$URL = 'https://go.microsoft.com/fwlink/?linkid=2086042'
 try {
-    $ADKExeObj = Get-LabInternetFile -Uri $ADKURL -Path (Split-Path -Path $ADKExePath -Parent) -FileName (Split-Path -Path $ADKExePath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
+    $ADKExeObj = Get-LabInternetFile -Uri $URL -Path (Split-Path -Path $ADKExePath -Parent) -FileName (Split-Path -Path $ADKExePath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
 }
 catch {
-    $Message = "Failed to download ADK installer from '{0}' ({1})" -f $ADKURL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
+    $Message = "Failed to download ADK installer from '{0}' ({1})" -f $URL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
     Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
     throw $Message
 }

@@ -17,7 +17,7 @@ CM-1902:
         ✔ Offer target site version @low @done (01/01/2020, 16:31:22)
             ✔ Optionally update @low @done (01/01/2020, 16:31:23)
         ✘ Notification when complete @low @cancelled (01/01/2020, 21:27:11) cancelled as AutomatedLab already delivers toast notifications. Extra stuff e.g. mail and/or Teams would be overkill IMO.
-        ☐ Test vmware @low 
+        ✘ Test vmware @low @cancelled (08/01/2020, 23:56:49) Advised by AL team that vmware is flakey for AL and not to bother
         ✔ Optionally bypass domain and hostname check @done (30/12/2019, 17:19:22)
         ✔ Based on switch, only trigger postinstall actions @done (30/12/2019, 17:19:20)
         ✔ Optionally configure CMTrace or OneTrace (OneTrace is only on 1906 or later) @done (30/12/2019, 17:19:08)
@@ -28,4 +28,6 @@ CM-1902:
         ✔ Optional auto logon @done (05/01/2020, 20:54:20)
         ✔ Ability to change username / password @done (05/01/2020, 20:54:21)
         ✔ Dynamic memory @done (05/01/2020, 20:39:05)
-        ☐ Add SUP + WSUS
+        ☐ Add SUP + WSUS @high 
+        ☐ Add SQL native client @high 
+        ☐ Remove "SCCM" references @low

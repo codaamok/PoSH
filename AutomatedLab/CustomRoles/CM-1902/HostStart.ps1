@@ -29,6 +29,9 @@ Param (
     [Parameter(Mandatory)]
     [String]$LogViewer,
 
+    [Parameter()]
+    [Switch]$DoNotDownloadWMIEv2,
+
     [Parameter(Mandatory)]
     [String]$Version,
 
@@ -56,6 +59,10 @@ if ($SccmSiteCode -notmatch '^[A-Za-z0-9]{3}$')
     Write-Error 'The site code must have exactly three characters and it can contain only alphanumeric characters (A to Z or 0 to 9).'
     return
 }
+
+$script = Get-Command -Name $PSScriptRoot\Invoke-DownloadMisc.ps1
+$param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
+& $PSScriptRoot\Invoke-DownloadMisc.ps1 @param
 
 $script = Get-Command -Name $PSScriptRoot\Invoke-DownloadADK.ps1
 $param = Sync-Parameter -Command $script -Parameters $PSBoundParameters
