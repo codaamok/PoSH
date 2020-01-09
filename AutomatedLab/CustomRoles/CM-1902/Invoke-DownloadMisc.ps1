@@ -1,7 +1,9 @@
 Param (
     [Parameter()]
-    [Switch]$DoNotDownloadWMIEv2
+    [String]$DoNotDownloadWMIEv2
 )
+
+$DoNotDownloadWMIEv2 = [Convert]::ToBoolean($DoNotDownloadWMIEv2)
 
 Write-ScreenInfo -Message "Starting miscellaneous items download process" -TaskStart
 
@@ -27,7 +29,7 @@ Write-ScreenInfo -Message "Activity Done" -TaskEnd
 #endregion
 
 #region Download WMIExplorer v2
-if (-not $DoNotDownloadWMIEv2.IsPresent) {
+if (-not $DoNotDownloadWMIEv2) {
     $WMIv2Zip = Join-Path -Path $labSources -ChildPath "Tools\WmiExplorer_2.0.0.2.zip"
     $WMIv2Exe = Join-Path -Path $labSources -ChildPath "Tools\WmiExplorer.exe"
     $URL = "https://github.com/vinaypamnani/wmie2/releases/download/v2.0.0.2/WmiExplorer_2.0.0.2.zip"
@@ -56,4 +58,4 @@ if (-not $DoNotDownloadWMIEv2.IsPresent) {
 }
 #endregion
 
-Write-ScreenInfo -Message "Finished miscellaneous items download process" -TaskStart
+Write-ScreenInfo -Message "Finished miscellaneous items download process" -TaskEnd

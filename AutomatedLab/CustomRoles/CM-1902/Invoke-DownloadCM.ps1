@@ -42,12 +42,6 @@ if (-not (Test-Path -Path $SccmBinariesDirectory))
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $Message
     }
-    Write-ScreenInfo -Message "Waiting for extraction to complete"
-    while (-not $p.HasExited) {
-        Write-ScreenInfo -Message '.' -NoNewLine
-        Start-Sleep -Seconds 10
-    }
-    Write-ScreenInfo -Message '.'
 }
 else
 {

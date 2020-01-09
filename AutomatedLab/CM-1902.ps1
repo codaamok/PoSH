@@ -8,31 +8,32 @@
 
     Builds a lab with the following properties:
         - 1x AutomatedLab:
-            Name: "CMLab01"
-            VMPath: <drive>:\AutomatedLab-VMs where <drive> is the fastest drive available
+            - Name: "CMLab01"
+            - VMPath: \<drive\>:\AutomatedLab-VMs where \<drive\> is the fastest drive available
         - 1x Active Directory domain:
-            Domain: "winadmins.lab"
-            Username: "Administrator"
-            Password: "Somepass1"
-            AddressSpace: An unused and available subnet increasing 192.168.1.0 by 1 until one is found.
-            ExternalVMSwitch: Allows physical network access via Hyper-V external switch named "Internet".
+            - Domain: "winadmins.lab"
+            - Username: "Administrator"
+            - Password: "Somepass1"
+            - AddressSpace: An unused and available subnet increasing 192.168.1.0 by 1 until one is found.
+            - ExternalVMSwitch: Allows physical network access via Hyper-V external switch named "Internet".
         - 2x virtual machines:
-            Operating System: Windows Server 2019 (Desktop Experience)
-            1x Domain Controller:
-                Name: "DC01"
-                vCPU: 2
-                Max memory: 2GB
-                Roles: "RootDC", "Routing"
-            1x Configuration Manager:
-                Name: "CM01"
-                vCPU: 4
-                Max memory: 8GB
-                Roles: "SQLServer2017"
-                CustomRoles: "CM-1902"
-                SiteCode: "P01"
-                SiteName: "CMLab01"
-                Version: "Latest"
-                LogViewer: "OneTrace"
+            - Operating System: Windows Server 2019 (Desktop Experience)
+            - 1x Domain Controller:
+                - Name: "DC01"
+                - vCPU: 2
+                - Max memory: 2GB
+                - Roles: "RootDC", "Routing"
+            - 1x Configuration Manager:
+                - Name: "CM01"
+                - vCPU: 4
+                - Max memory: 8GB
+                - Roles: "SQLServer2017"
+                - CustomRoles: "CM-1902"
+                - SiteCode: "P01"
+                - SiteName: "CMLab01"
+                - Version: "Latest"
+                - LogViewer: "OneTrace"
+                - Site system roles: MP, DP, SUP (inc WSUS)
 
     The following customsations are applied to the ConfigMgr server post install:
         - The ConfigMgr console is updated
@@ -390,7 +391,7 @@ else {
         WinPEDownloadPath       = "$labSources\SoftwarePackages\WinPE"
         LogViewer               = $LogViewer
         SqlServerName           = $CMHostname
-        DoNotDownloadWMIEv2     = $DoNotDownloadWMIEv2.IsPresent
+        DoNotDownloadWMIEv2     = $DoNotDownloadWMIEv2.IsPresent.ToString()
     }
     Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -DiskName "CM01-DATA-01","CM01-SQL-01" -PostInstallationActivity $sccmRole
 }

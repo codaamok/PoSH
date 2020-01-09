@@ -30,7 +30,7 @@ Param (
     [String]$LogViewer,
 
     [Parameter()]
-    [Switch]$DoNotDownloadWMIEv2,
+    [String]$DoNotDownloadWMIEv2,
 
     [Parameter(Mandatory)]
     [String]$Version,

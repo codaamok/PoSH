@@ -462,7 +462,7 @@ UseProxy=0
     #endregion
     
     #region Copy CM binaries, SQL native client installer, pre-reqs, ADK and WinPE
-    Write-ScreenInfo -Message "Copying CM binaries, SQL native client installer, pre-reqs, ADK and WinPE" -TaskStart
+    Write-ScreenInfo -Message ("Copying CM binaries, SQL native client installer, pre-reqs, ADK and WinPE to '{0}'" -f $SccmServerName) -TaskStart
     try {
         Copy-LabFileItem -Path $SccmBinariesDirectory -DestinationFolderPath $VMInstallDirectory
     }
@@ -602,7 +602,7 @@ UseProxy=0
     #endregion
 
     #region Install WinPE
-    Write-ScreenInfo -Message "Installing WinPE on" -TaskStart
+    Write-ScreenInfo -Message "Installing WinPE" -TaskStart
     $Path = Join-Path $VMInstallDirectory -ChildPath "WinPE\adkwinpesetup.exe"
     $job = Install-LabSoftwarePackage -LocalPath $Path -CommandLine "/norestart /q /ceip off /features OptionId.WindowsPreinstallationEnvironment" -ExpectedReturnCodes 0
     Wait-LWLabJob -Job $job
@@ -631,7 +631,7 @@ UseProxy=0
     #endregion
     
     #region Install WDS
-    Write-ScreenInfo -Message "Installing WDS on '$SccmServerName'" -TaskStart
+    Write-ScreenInfo -Message "Installing WDS" -TaskStart
     $job = Install-LabWindowsFeature -ComputerName $SccmServerName -FeatureName WDS
     Wait-LWLabJob -Job $job
     try {
@@ -699,7 +699,7 @@ UseProxy=0
 
     #region Install WSUS
     Write-ScreenInfo -Message "Installing WSUS" -TaskStart
-    $job = Install-LabWindowsFeature -FeatureName "UpdateServices,UpdateServices-Services,UpdateServices-DB,UpdateServices-RSAT,UpdateServices-API,UpdateServices-UI"
+    $job = Install-LabWindowsFeature -FeatureName "UpdateServices-Services,UpdateServices-DB" -IncludeManagementTools
     Wait-LWLabJob -Job $job
     try {
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
