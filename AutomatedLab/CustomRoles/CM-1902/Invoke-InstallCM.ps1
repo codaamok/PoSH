@@ -739,7 +739,7 @@ UseProxy=0
     Wait-LWLabJob -Job $job
     try {
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
+    } #test
     catch {
         Write-ScreenInfo -Message ("Failed installing additional features (1/2) ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
         throw $ReceiveJobErr
