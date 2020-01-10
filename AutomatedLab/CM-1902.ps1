@@ -23,7 +23,7 @@
                 - vCPU: 2
                 - Max memory: 2GB
                 - Roles: "RootDC", "Routing"
-            - 1x Configuration Manager:
+            - 1x Configuration Manager primary site server:
                 - Name: "CM01"
                 - vCPU: 4
                 - Max memory: 8GB

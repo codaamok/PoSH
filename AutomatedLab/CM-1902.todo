@@ -31,3 +31,4 @@ CM-1902:
         ☐ Add SUP + WSUS @high 
         ☐ Add SQL native client @high 
         ☐ Remove "SCCM" references @low
+        ☐ Configure SQL to allow remote connection HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\INSTANCEGOESHERE\MSSQLServer\SuperSocketNetLib\Tcp\IP2

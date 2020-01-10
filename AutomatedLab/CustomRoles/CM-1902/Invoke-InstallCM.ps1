@@ -461,8 +461,8 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
     
-    #region Copy CM binaries, SQL native client installer, pre-reqs, ADK and WinPE
-    Write-ScreenInfo -Message ("Copying CM binaries, SQL native client installer, pre-reqs, ADK and WinPE to '{0}'" -f $SccmServerName) -TaskStart
+    #region CM binaries, pre-reqs, SQL native client installer, ADK and WinPE files
+    Write-ScreenInfo -Message ("Copying CM binaries, pre-reqs, SQL native client installer, ADK and WinPE files to '{0}'" -f $SccmServerName) -TaskStart
     try {
         Copy-LabFileItem -Path $SccmBinariesDirectory -DestinationFolderPath $VMInstallDirectory
     }
@@ -706,6 +706,27 @@ UseProxy=0
     }
     catch {
         Write-ScreenInfo -Message ("Failed installing WSUS ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Configure SQL to allow remote TCP/IP connections
+    # Needed for WSUS postinstall tasks
+    Write-ScreenInfo -Message "Configuring SQL to allow remote TCP/IP connections" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Configuring SQL to allow remote TCP/IP connections" -ScriptBlock {
+        Get-ItemProperty -Path "HKLM:\Software\Microsoft\Microsoft SQL Server\MSSQL*.MSSQLSERVER\MSSQLServer\SuperSocketNetLib\Tcp\*" | ForEach-Object {
+            if ($_.DisplayName -eq "Specific IP Address") {
+                Set-ItemProperty -Path $_.PSPath -Name "Enabled" -Value 1
+            }
+        }
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        Write-ScreenInfo -Message ("Failed to configure SQL to allow for remote TCP/IP connections ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
         throw $ReceiveJobErr
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
