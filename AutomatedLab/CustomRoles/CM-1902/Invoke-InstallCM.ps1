@@ -741,7 +741,7 @@ UseProxy=0
     #region Run WSUS post configuration tasks
     Write-ScreenInfo -Message "Running WSUS post configuration tasks" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Running WSUS post configuration tasks" -Variable (Get-Variable "SqlServerName") -ScriptBlock {
-        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn\MSSQLSERVER`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
+        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
