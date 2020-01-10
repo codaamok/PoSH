@@ -405,8 +405,8 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
-    #region Bringing online additional online
-    Write-ScreenInfo -Message "Bringing online additional online" -TaskStart
+    #region Bringing online additional disks
+    Write-ScreenInfo -Message "Bringing online additional disks" -TaskStart
     #Bringing all available disks online (this is to cater for the secondary drive)
     #For some reason, cant make the disk online and RW in the one command, need to perform two seperate actions
     
