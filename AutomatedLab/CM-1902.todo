@@ -29,6 +29,7 @@ CM-1902:
         ✔ Ability to change username / password @done (05/01/2020, 20:54:21)
         ✔ Dynamic memory @done (05/01/2020, 20:39:05)
         ☐ Add SUP + WSUS @high 
-        ☐ Add SQL native client @high 
+        ✔ Add SQL native client @high @done (10/01/2020, 22:42:22)
         ☐ Remove "SCCM" references @low
-        ☐ Configure SQL to allow remote connection HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\INSTANCEGOESHERE\MSSQLServer\SuperSocketNetLib\Tcp\IP2
+        ✔ Configure SQL to allow remote connection HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\INSTANCEGOESHERE\MSSQLServer\SuperSocketNetLib\Tcp\IP2 @done (10/01/2020, 22:42:18)
+        ☐ Set DATA and LOG directories for SQL install or come up with some way that puts SUSDB on F:\ @high 

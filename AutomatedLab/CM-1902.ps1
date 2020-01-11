@@ -251,6 +251,39 @@ Param (
     [Switch]$AutoLogon
 )
 
+#region New-LabDefinition
+$NewLabDefinitionSplat = @{
+    Name                        = $LabName
+    DefaultVirtualizationEngine = "HyperV"
+    ReferenceDiskSizeInGB       = 100
+    ErrorAction                 = "Stop"
+}
+if ($PSBoundParameters.ContainsKey("VMPath")) { 
+    $Path = Join-Path -Path $VMPath -ChildPath $LabName
+    $NewLabDefinitionSplat.Add("VMPath",$Path)
+}
+New-LabDefinition @NewLabDefinitionSplat
+#endregion
+
+#region Initialise
+$PSDefaultParameterValues = @{
+    'Add-LabMachineDefinition:OperatingSystem' = "Windows Server $OSVersion Standard (Desktop Experience)"
+    'Add-LabMachineDefinition:DomainName'      = $Domain
+    'Add-LabMachineDefinition:Network'         = $LabName
+    'Add-LabMachineDefinition:ToolsPath'       = "$labSources\Tools"
+    'Add-LabMachineDefinition:MinMemory'       = 1GB
+    'Add-LabMachineDefinition:Memory'          = 1GB
+}
+
+if ($AutoLogon.IsPresent) {
+    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonDomainName'] = $Domain
+    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonUserName']   = $AdminUser
+    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonPassword']   = $AdminPass
+}
+
+$SQLConfigurationFile = Join-Path -Path $labSources -ChildPath "CustomRoles\CM-1902\ConfigurationFile-SQL.ini"
+#endregion
+
 #region Preflight checks
 switch ($true) {
     (-not $SkipLabNameCheck.IsPresent) {
@@ -291,37 +324,9 @@ switch ($true) {
     ((Get-VMSwitch -Name $ExternalVMSwitchName).SwitchType -ne "External") { 
         throw ("Hyper-V virtual switch '{0}' is not of External type" -f $ExternalVMSwitchName)
     }
-}
-#endregion
-
-#region New-LabDefinition
-$NewLabDefinitionSplat = @{
-    Name                        = $LabName
-    DefaultVirtualizationEngine = "HyperV"
-    ReferenceDiskSizeInGB       = 100
-    ErrorAction                 = "Stop"
-}
-if ($PSBoundParameters.ContainsKey("VMPath")) { 
-    $Path = Join-Path -Path $VMPath -ChildPath $LabName
-    $NewLabDefinitionSplat.Add("VMPath",$Path)
-}
-New-LabDefinition @NewLabDefinitionSplat
-#endregion
-
-#region Initialise
-$PSDefaultParameterValues = @{
-    'Add-LabMachineDefinition:OperatingSystem' = "Windows Server $OSVersion Standard (Desktop Experience)"
-    'Add-LabMachineDefinition:DomainName'      = $Domain
-    'Add-LabMachineDefinition:Network'         = $LabName
-    'Add-LabMachineDefinition:ToolsPath'       = "$labSources\Tools"
-    'Add-LabMachineDefinition:MinMemory'       = 1GB
-    'Add-LabMachineDefinition:Memory'          = 1GB
-}
-
-if ($AutoLogon.IsPresent) {
-    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonDomainName'] = $Domain
-    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonUserName']   = $AdminUser
-    $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonPassword']   = $AdminPass
+    (-not(Test-Path $SQLConfigurationFile)) {
+        throw ("Can't find '{0}'" -f $SQLConfigurationFile)
+    }
 }
 #endregion
 
@@ -370,7 +375,7 @@ Add-LabMachineDefinition -Name $DCHostname -Processors $DCCPU -Roles RootDC,Rout
 Add-LabIsoImageDefinition -Name SQLServer2017 -Path "$labSources\ISOs\en_sql_server_2017_standard_x64_dvd_11294407.iso"
 
 $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{ 
-    Collation = 'SQL_Latin1_General_CP1_CI_AS'
+    ConfigurationFile = [String]$SQLConfigurationFile
 }
 
 Add-LabDiskDefinition -Name "CM01-DATA-01" -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"

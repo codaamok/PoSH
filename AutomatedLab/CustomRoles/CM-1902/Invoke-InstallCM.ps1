@@ -316,8 +316,6 @@ JoinCEIP=0
 [SQLConfigOptions]
 SQLServerName=$SqlServerFqdn
 DatabaseName=CM_$SccmSiteCode
-SQLDataFilePath=F:\DATA\
-SQLLogFilePath=F:\LOGS\
        
 [CloudConnectorOptions]
 CloudConnector=1
@@ -443,11 +441,9 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
-    #region Create folders for SQL database and WSUS
-    Write-ScreenInfo -Message "Creating folders for SQL database and WSUS" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Creating folders for SQL database and WSUS" -Variable (Get-Variable -Name "sccmComputerAccount") -ScriptBlock {
-        New-Item -Path 'F:\DATA\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
-        New-Item -Path 'F:\LOGS\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
+    #region Create folder for WSUS
+    Write-ScreenInfo -Message "Creating folder for WSUS" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Creating folder for WSUS" -Variable (Get-Variable -Name "sccmComputerAccount") -ScriptBlock {
         New-Item -Path 'G:\WSUS\' -ItemType Directory -Force -ErrorAction "Stop" | Out-Null
     }
     Wait-LWLabJob -Job $job
@@ -455,7 +451,7 @@ UseProxy=0
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
     catch {
-        Write-ScreenInfo -Message ("Failed to create folders for SQL database or WSUS ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        Write-ScreenInfo -Message ("Failed to create folder for WSUS ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
         throw $ReceiveJobErr
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
@@ -741,7 +737,7 @@ UseProxy=0
     #region Run WSUS post configuration tasks
     Write-ScreenInfo -Message "Running WSUS post configuration tasks" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Running WSUS post configuration tasks" -Variable (Get-Variable "SqlServerName") -ScriptBlock {
-        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
+        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn\MSSQLSERVER`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
@@ -851,7 +847,27 @@ UseProxy=0
 
     #region Install SUP
     Write-ScreenInfo -Message "Installing Software Update Point" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "sccmServerFqdn") -ScriptBlock {
+    $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "sccmServerFqdn","SccmSiteCode") -ScriptBlock {
+        if(-not(Get-Module ConfigurationManager)) {
+            try {
+                Import-Module ("{0}\..\ConfigurationManager.psd1" -f $ENV:SMS_ADMIN_UI_PATH) -ErrorAction "Stop" -ErrorVariable "ImportModuleError"
+            }
+            catch {
+                throw ("Failed to import ConfigMgr module: {0}" -f $ImportModuleError.ErrorRecord.Exception.Message)
+            }
+        }
+        try {
+            if(-not(Get-PSDrive -Name $SccmSiteCode -PSProvider CMSite -ErrorAction SilentlyContinue)) {
+                New-PSDrive -Name $SccmSiteCode -PSProvider CMSite -Root $sccmServerFqdn -ErrorAction "Stop" | Out-Null
+            }
+            Set-Location ("{0}:\" -f $SccmSiteCode) -ErrorAction "Stop"    
+        } 
+        catch {
+            if(Get-PSDrive -Name $SccmSiteCode -PSProvider "CMSite" -ErrorAction "SilentlyContinue") {
+                Remove-PSDrive -Name $SccmSiteCode -Force
+            }
+            throw ("Failed to create New-PSDrive with site code `"{0}`" and server `"{1}`"" -f $SccmSiteCode, $sccmServerFqdn)
+        }
         Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $sccmServerFqdn -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
