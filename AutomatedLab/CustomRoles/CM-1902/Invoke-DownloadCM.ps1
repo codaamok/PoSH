@@ -13,7 +13,7 @@ Write-ScreenInfo -Message "Downloading CM binaries archive" -TaskStart
 
 $CMZipPath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\SC_Configmgr_SCEP_1902.zip"
 if (Test-Path -Path $CMZipPath) {
-    Write-ScreenInfo -Message ("CM binaries archive exists, delete '{0}' if you want to download again" -f $CMZipPath)
+    Write-ScreenInfo -Message ("CM binaries archive already exists, delete '{0}' if you want to download again" -f $CMZipPath)
 }
 
 $URL = 'http://download.microsoft.com/download/1/B/C/1BCADBD7-47F6-40BB-8B1F-0B2D9B51B289/SC_Configmgr_SCEP_1902.exe'
@@ -45,7 +45,7 @@ if (-not (Test-Path -Path $SccmBinariesDirectory))
 }
 else
 {
-    Write-ScreenInfo -Message ("CM folder does already exist, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmBinariesDirectory)
+    Write-ScreenInfo -Message ("CM folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmBinariesDirectory)
 }
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd
@@ -72,7 +72,7 @@ if (-not (Test-Path -Path $SccmPreReqsDirectory))
 }
 else
 {
-    Write-ScreenInfo -Message ("CM prerequisites folder does already exist, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmPreReqsDirectory)
+    Write-ScreenInfo -Message ("CM prerequisites folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmPreReqsDirectory)
 }
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd

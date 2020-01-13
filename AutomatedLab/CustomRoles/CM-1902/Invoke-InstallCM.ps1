@@ -40,7 +40,13 @@ Param (
     [String]$Version,
         
     [Parameter(Mandatory)]
-    [String]$SqlServerName
+    [String]$SqlServerName,
+
+    [Parameter(Mandatory)]
+    [String]$AdminUser,
+
+    [Parameter(Mandatory)]
+    [String]$AdminPass
 
 )
 
@@ -231,6 +237,33 @@ function New-LoopAction {
     }
 }
 
+function Import-CMModule {
+    Param(
+        [String]$ComputerName,
+        [String]$SiteCode
+    )
+    if(-not(Get-Module ConfigurationManager)) {
+        try {
+            Import-Module ("{0}\..\ConfigurationManager.psd1" -f $ENV:SMS_ADMIN_UI_PATH) -ErrorAction "Stop" -ErrorVariable "ImportModuleError"
+        }
+        catch {
+            throw ("Failed to import ConfigMgr module: {0}" -f $ImportModuleError.ErrorRecord.Exception.Message)
+        }
+    }
+    try {
+        if(-not(Get-PSDrive -Name $SiteCode -PSProvider "CMSite" -ErrorAction "SilentlyContinue")) {
+            New-PSDrive -Name $SiteCode -PSProvider "CMSite" -Root $ComputerName -Scope "Script" -ErrorAction "Stop" | Out-Null
+        }
+        Set-Location ("{0}:\" -f $SiteCode) -ErrorAction "Stop"    
+    } 
+    catch {
+        if(Get-PSDrive -Name $SiteCode -PSProvider "CMSite" -ErrorAction "SilentlyContinue") {
+            Remove-PSDrive -Name $SiteCode -Force
+        }
+        throw ("Failed to create New-PSDrive with site code `"{0}`" and server `"{1}`"" -f $SiteCode, $ComputerName)
+    }
+}
+
 function Install-CMSite {
     Param (
         [Parameter(Mandatory)]
@@ -252,7 +285,13 @@ function Install-CMSite {
         [String]$SccmProductId,
         
         [Parameter(Mandatory)]
-        [String]$SqlServerName
+        [String]$SqlServerName,
+
+        [Parameter(Mandatory)]
+        [String]$AdminUser,
+    
+        [Parameter(Mandatory)]
+        [String]$AdminPass
     )
 
     #region Initialise
@@ -327,7 +366,7 @@ UseProxy=0
 [HierarchyExpansionOption]
 "@
     
-    $setupConfigFileContent | Out-File -FilePath "$($downloadTargetFolder)\ConfigMgrUnattend.ini" -Encoding ascii -ErrorAction "Stop"
+    $setupConfigFileContent | Out-File -FilePath "$($downloadTargetFolder)\ConfigurationFile-CM.ini" -Encoding ascii -ErrorAction "Stop"
     #endregion
     
     # Pre-req checks
@@ -341,7 +380,8 @@ UseProxy=0
     Write-ScreenInfo -Message "Checking if site is already installed" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Checking if site is already installed" -Variable (Get-Variable -Name "SccmSiteCode") -ScriptBlock {
         $Query = "SELECT * FROM SMS_Site WHERE SiteCode='{0}'" -f $SccmSiteCode
-        Get-CimInstance -Namespace "ROOT/SMS/site_$($SccmSiteCode)" -Query $Query -ErrorAction "Stop"
+        $Namespace = "ROOT/SMS/site_{0}" -f $SccmSiteCode
+        Get-CimInstance -Namespace $Namespace -Query $Query -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
@@ -458,7 +498,7 @@ UseProxy=0
     #endregion
     
     #region CM binaries, pre-reqs, SQL native client installer, ADK and WinPE files
-    Write-ScreenInfo -Message ("Copying CM binaries, pre-reqs, SQL native client installer, ADK and WinPE files to '{0}'" -f $SccmServerName) -TaskStart
+    Write-ScreenInfo -Message "Copying files" -TaskStart
     try {
         Copy-LabFileItem -Path $SccmBinariesDirectory -DestinationFolderPath $VMInstallDirectory
     }
@@ -478,15 +518,24 @@ UseProxy=0
     $Paths = @(
         (Join-Path -Path $downloadTargetFolder -ChildPath "ADK"),
         (Join-Path -Path $downloadTargetFolder -ChildPath "WinPE"),
-        (Join-Path -Path $downloadTargetFolder -ChildPath "ConfigMgrUnattend.ini")
+        (Join-Path -Path $downloadTargetFolder -ChildPath "ConfigurationFile-CM.ini")
         (Join-Path -Path $downloadTargetFolder -ChildPath "sqlncli.msi")
     )
     ForEach ($Path in $Paths) {
+        # Put CM ini file in same location as SQL ini, just for consistency. Placement of SQL ini from SQL role isn't configurable.
+        switch -Regex ($Path) {
+            "Configurationfile-CM\.ini$" {
+                $TargetDir = "C:\"
+            }
+            default {
+                $TargetDir = $VMInstallDirectory
+            }
+        }
         try {
-            Copy-LabFileItem -Path $Path -DestinationFolderPath $VMInstallDirectory
+            Copy-LabFileItem -Path $Path -DestinationFolderPath $TargetDir
         }
         catch {
-            $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $Path, $VMInstallDirectory, $SccmServerName, $CopyLabFileItem.Exception.Message
+            $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $Path, $TargetDir, $SccmServerName, $CopyLabFileItem.Exception.Message
             Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
             throw $Message
         }
@@ -517,7 +566,7 @@ UseProxy=0
     }
     Wait-LWLabJob -Job $job
     try {
-        $result = $InstalledSite = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
     catch {
         Write-ScreenInfo -Message ("Failed to extend the AD Schema ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
@@ -666,7 +715,7 @@ UseProxy=0
             throw $Message
         }
         "Installed" {
-            Write-ScreenInfo -Message "WDS is installed"
+            #Write-ScreenInfo -Message "WDS is installed"
         }
         default {
             Write-ScreenInfo -Message "Could not determine WDS's install state" -Type "Warning"
@@ -706,38 +755,17 @@ UseProxy=0
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
-
-    #region Configure SQL to allow remote TCP/IP connections
-    # Needed for WSUS postinstall tasks
-    Write-ScreenInfo -Message "Configuring SQL to allow remote TCP/IP connections" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Configuring SQL to allow remote TCP/IP connections" -ScriptBlock {
-        Get-ItemProperty -Path "HKLM:\Software\Microsoft\Microsoft SQL Server\MSSQL*.MSSQLSERVER\MSSQLServer\SuperSocketNetLib\Tcp\*" | ForEach-Object {
-            if ($_.DisplayName -eq "Specific IP Address") {
-                Set-ItemProperty -Path $_.PSPath -Name "Enabled" -Value 1
-            }
-        }
-    }
-    Wait-LWLabJob -Job $job
-    try {
-        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
-    catch {
-        Write-ScreenInfo -Message ("Failed to configure SQL to allow for remote TCP/IP connections ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
-        throw $ReceiveJobErr
-    }
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
-
-    #region Restart
+    
+    <##region Restart
     Write-ScreenInfo -Message "Restarting server" -TaskStart
     Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
     Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
+    #endregion#>
 
     #region Run WSUS post configuration tasks
     Write-ScreenInfo -Message "Running WSUS post configuration tasks" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Running WSUS post configuration tasks" -Variable (Get-Variable "SqlServerName") -ScriptBlock {
-        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn\MSSQLSERVER`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
+    $job = Invoke-LabCommand -ActivityName "Running WSUS post configuration tasks" -Variable (Get-Variable "sqlServerFqdn") -ScriptBlock {
+        Start-Process -FilePath "C:\Program Files\Update Services\Tools\wsusutil.exe" -ArgumentList "postinstall","SQL_INSTANCE_NAME=`"$sqlServerFqdn`"", "CONTENT_DIR=`"G:\WSUS`"" -Wait -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
@@ -807,7 +835,7 @@ UseProxy=0
     #region Install Configuration Manager
     Write-ScreenInfo "Installing Configuration Manager" -TaskStart
     $exePath = Join-Path -Path $VMSccmBinariesDirectory -ChildPath "SMSSETUP\BIN\X64\setup.exe"
-    $iniPath = Join-Path -Path $VMInstallDirectory -ChildPath "ConfigMgrUnattend.ini"
+    $iniPath = "C:\ConfigurationFile-CM.ini"
     $cmd = "/Script `"{0}`" /NoUserInput" -f $iniPath
     $job = Install-LabSoftwarePackage -LocalPath $exePath -CommandLine $cmd -ProgressIndicator 2 -ExpectedReturnCodes 0
     Wait-LWLabJob -Job $job
@@ -821,15 +849,22 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
+    #region Restart
+    Write-ScreenInfo -Message "Restarting server" -TaskStart
+    Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
     #region Validating install
-    Write-ScreenInfo "Validating install" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Validating install" -Variable (Get-Variable -Name "SccmSiteCode") -PassThru -ScriptBlock {
+    Write-ScreenInfo -Message "Validating install" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Validating install" -Variable (Get-Variable -Name "SccmSiteCode") -ScriptBlock {
         $Query = "SELECT * FROM SMS_Site WHERE SiteCode='{0}'" -f $SccmSiteCode
-        Get-CimInstance -Namespace "ROOT/SMS/site_$($SccmSiteCode)" -Query $Query -ErrorAction "Stop"
+        $Namespace = "ROOT/SMS/site_{0}" -f $SccmSiteCode
+        Get-CimInstance -Namespace $Namespace -Query $Query -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
-        $InstalledSite = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
     catch {
         $Message = "Failed to validate install, could not find site code '{0}' in SMS_Site class ({1})" -f $SccmSiteCode, $ReceiveJobErr.ErrorRecord.Exception.Message
@@ -839,36 +874,11 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
-    #region Restart
-    Write-ScreenInfo -Message "Restarting server" -TaskStart
-    Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
-
     #region Install SUP
     Write-ScreenInfo -Message "Installing Software Update Point" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "sccmServerFqdn","SccmSiteCode") -ScriptBlock {
-        if(-not(Get-Module ConfigurationManager)) {
-            try {
-                Import-Module ("{0}\..\ConfigurationManager.psd1" -f $ENV:SMS_ADMIN_UI_PATH) -ErrorAction "Stop" -ErrorVariable "ImportModuleError"
-            }
-            catch {
-                throw ("Failed to import ConfigMgr module: {0}" -f $ImportModuleError.ErrorRecord.Exception.Message)
-            }
-        }
-        try {
-            if(-not(Get-PSDrive -Name $SccmSiteCode -PSProvider CMSite -ErrorAction SilentlyContinue)) {
-                New-PSDrive -Name $SccmSiteCode -PSProvider CMSite -Root $sccmServerFqdn -ErrorAction "Stop" | Out-Null
-            }
-            Set-Location ("{0}:\" -f $SccmSiteCode) -ErrorAction "Stop"    
-        } 
-        catch {
-            if(Get-PSDrive -Name $SccmSiteCode -PSProvider "CMSite" -ErrorAction "SilentlyContinue") {
-                Remove-PSDrive -Name $SccmSiteCode -Force
-            }
-            throw ("Failed to create New-PSDrive with site code `"{0}`" and server `"{1}`"" -f $SccmSiteCode, $sccmServerFqdn)
-        }
-        Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $sccmServerFqdn -ErrorAction "Stop"
+    $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "sccmServerFqdn","SccmServerName","SccmSiteCode") -Function (Get-Command "Import-CMModule") -ScriptBlock {
+        Import-CMModule -ComputerName $SccmServerName -SiteCode $SccmSiteCode
+        Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $sccmServerFqdn -SiteCode $SccmSiteCode -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
     try {
@@ -876,6 +886,63 @@ UseProxy=0
     }
     catch {
         $Message = "Failed to install Software Update Point ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Add CM account to use for Reporting Service Point
+    Write-ScreenInfo -Message ("Creating CM user account '{0}'" -f $AdminUser) -TaskStart
+    $job = Invoke-LabCommand -ActivityName ("Adding new CM account '{0}' to use for Reporting Service Point" -f $AdminUser) -Variable (Get-Variable "SccmServerName", "SccmSiteCode", "AdminUser", "AdminPass") -Function (Get-Command "Import-CMModule") -ScriptBlock {
+        Import-CMModule -ComputerName $SccmServerName -SiteCode $SccmSiteCode
+        $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
+        $Secure = ConvertTo-SecureString -String $AdminPass -AsPlainText -Force
+        New-CMAccount -Name $Account -Password $Secure -SiteCode $SccmSiteCode -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        $Message = "Failed to add new CM account ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Install Reporting Service Point
+    Write-ScreenInfo -Message "Installing Reporting Service Point" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Installing Reporting Service Point" -Variable (Get-Variable "sccmServerFqdn", "SccmServerName", "SccmSiteCode", "AdminUser") -Function (Get-Command "Import-CMModule") -ScriptBlock {
+        Import-CMModule -ComputerName $SccmServerName -SiteCode $SccmSiteCode
+        $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
+        Add-CMReportingServicePoint -SiteCode $SccmSiteCode -SiteSystemServerName $sccmServerFqdn -ReportServerInstance "SSRS" -UserName $Account -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        $Message = "Failed to install Reporting Service Point ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
+    #region Install Endpoint Protection Point
+    Write-ScreenInfo -Message "Installing Endpoint Protection Point" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Installing Endpoint Protection Point" -Variable (Get-Variable "sccmServerFqdn", "SccmServerName", "SccmSiteCode") -ScriptBlock {
+        Import-CMModule -ComputerName $SccmServerName -SiteCode $SccmSiteCode
+        Add-CMEndpointProtectionPoint -ProtectionService "DoNotJoinMaps" -SiteCode $SccmSiteCode -SiteSystemServerName $sccmServerFqdn -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        $Message = "Failed to install Endpoint Protection Point ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $ReceiveJobErr
     }
@@ -894,6 +961,8 @@ $InstallCMSiteSplat = @{
     SccmSiteName            = $SccmSiteName
     SccmProductId           = $SccmProductId
     SqlServerName           = $SqlServerName
+    AdminUser               = $AdminUser
+    AdminPass               = $AdminPass
 }
 
 Write-ScreenInfo -Message "Starting site install process" -TaskStart

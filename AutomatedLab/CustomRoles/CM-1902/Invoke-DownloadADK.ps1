@@ -13,7 +13,7 @@ Write-ScreenInfo -Message "Downloading ADK installer" -TaskStart
 
 $ADKExePath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\adksetup.exe"
 if (Test-Path -Path $ADKExePath) {
-    Write-ScreenInfo -Message ("ADK installer exists, delete '{0}' if you want to download again" -f $ADKExePath)
+    Write-ScreenInfo -Message ("ADK installer already exists, delete '{0}' if you want to download again" -f $ADKExePath)
 }
 
 $URL = 'https://go.microsoft.com/fwlink/?linkid=2086042'
@@ -63,7 +63,7 @@ Write-ScreenInfo -Message "Downloading WinPE installer" -TaskStart
 
 $WinPEExePath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\adkwinpesetup.exe"
 if (Test-Path -Path $WinPEExePath) {
-    Write-ScreenInfo -Message ("WinPE installer exists, delete '{0}' if you want to download again" -f $WinPEExePath)
+    Write-ScreenInfo -Message ("WinPE installer already exists, delete '{0}' if you want to download again" -f $WinPEExePath)
 }
 
 $WinPEUrl = 'https://go.microsoft.com/fwlink/?linkid=2087112'

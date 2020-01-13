@@ -383,7 +383,6 @@ function Update-CMSite {
         }
         # Writing dot because of -NoNewLine in Wait-LWLabJob
         Write-ScreenInfo -Message "."
-        Write-ScreenInfo -Message "Download started"
         Write-ScreenInfo -Message "Activity done" -TaskEnd
 
     }
@@ -419,7 +418,6 @@ function Update-CMSite {
                 throw $ReceiveJobErr
             }
         }
-        Write-ScreenInfo -Message "Download complete"
         Write-ScreenInfo -Message "Activity done" -TaskEnd
 
     }
@@ -455,7 +453,7 @@ function Update-CMSite {
             return $Update
         } -ScriptBlock {
             # No error handling since WMI can become unavailabile with "generic error" exception multiple times throughout the update. Not ideal
-            $job = Invoke-LabCommand -ComputerName $SccmServerName -ActivityName "Querying update install state" -Variable (Get-Variable -Name "UpdatePackageGuid", "SccmSiteCode") -PassThru -ScriptBlock {
+            $job = Invoke-LabCommand -ComputerName $SccmServerName -ActivityName "Querying update install state" -Variable (Get-Variable -Name "UpdatePackageGuid", "SccmSiteCode") -ScriptBlock {
                 $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $UpdatePackageGuid
                 Get-CimInstance -Namespace "ROOT/SMS/site_$SccmSiteCode" -Query $Query -ErrorAction SilentlyContinue
             }
@@ -464,7 +462,6 @@ function Update-CMSite {
         }
         # Writing dot because of -NoNewLine in Wait-LWLabJob
         Write-ScreenInfo -Message "."
-        Write-ScreenInfo -Message "Update installed"
         Write-ScreenInfo -Message "Activity done" -TaskEnd
         
     }
@@ -483,10 +480,7 @@ function Update-CMSite {
         Write-ScreenInfo -Message ("Could not query SMS_Site to validate update install ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
         throw $ReceiveJobErr
     }
-    if ($InstalledSite.Version -eq $Update.FullVersion) {
-        Write-ScreenInfo -Message "Update successfully validated"
-    }
-    else {
+    if ($InstalledSite.Version -ne $Update.FullVersion) {
         $Message = "Update validation failed, installed version is '{0}' and the expected version is '{1}'" -f $InstalledSite.Version, $Update.FullVersion
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $Message

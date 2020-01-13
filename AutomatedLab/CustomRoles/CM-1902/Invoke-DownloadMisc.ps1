@@ -13,7 +13,7 @@ Write-ScreenInfo -Message "Downloading SQL Native Client" -TaskStart
 
 $SQLNCLIMSIPath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\sqlncli.msi"
 if (Test-Path -Path $SQLNCLIMSIPath) {
-    Write-ScreenInfo -Message ("SQL Native Client MSI, delete '{0}' if you want to download again" -f $SQLNCLIMSIPath)
+    Write-ScreenInfo -Message ("SQL Native Client MSI already exists, delete '{0}' if you want to download again" -f $SQLNCLIMSIPath)
 }
 
 $URL = "https://download.microsoft.com/download/B/E/D/BED73AAC-3C8A-43F5-AF4F-EB4FEA6C8F3A/ENU/x64/sqlncli.msi"

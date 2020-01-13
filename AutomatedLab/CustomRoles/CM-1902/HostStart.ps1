@@ -36,7 +36,13 @@ Param (
     [String]$Version,
 
     [Parameter(Mandatory)]
-    [String]$SqlServerName
+    [String]$SqlServerName,
+
+    [Parameter(Mandatory)]
+    [String]$AdminUser,
+
+    [Parameter(Mandatory)]
+    [String]$AdminPass
 
 )
 

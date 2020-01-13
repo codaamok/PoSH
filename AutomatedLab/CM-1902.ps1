@@ -22,18 +22,20 @@
                 - Name: "DC01"
                 - vCPU: 2
                 - Max memory: 2GB
+                - Disks: 1 x 100GB (OS, dynamic)
                 - Roles: "RootDC", "Routing"
             - 1x Configuration Manager primary site server:
                 - Name: "CM01"
                 - vCPU: 4
                 - Max memory: 8GB
+                - Disks: 1 x 100GB (OS, dynamic), 1x 30GB (SQL, dynamic), 1x 50GB (DATA, dynamic)
                 - Roles: "SQLServer2017"
                 - CustomRoles: "CM-1902"
                 - SiteCode: "P01"
                 - SiteName: "CMLab01"
                 - Version: "Latest"
                 - LogViewer: "OneTrace"
-                - Site system roles: MP, DP, SUP (inc WSUS)
+                - Site system roles: MP, DP, SUP (inc WSUS), RSP, EP
 
     The following customsations are applied to the ConfigMgr server post install:
         - The ConfigMgr console is updated
@@ -397,6 +399,8 @@ else {
         LogViewer               = $LogViewer
         SqlServerName           = $CMHostname
         DoNotDownloadWMIEv2     = $DoNotDownloadWMIEv2.IsPresent.ToString()
+        AdminUser               = $AdminUser
+        AdminPass               = $AdminPass
     }
     Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -DiskName "CM01-DATA-01","CM01-SQL-01" -PostInstallationActivity $sccmRole
 }
