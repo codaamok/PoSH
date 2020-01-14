@@ -378,6 +378,7 @@ Add-LabIsoImageDefinition -Name SQLServer2017 -Path "$labSources\ISOs\en_sql_ser
 
 $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{ 
     ConfigurationFile = [String]$SQLConfigurationFile
+    Collation = "SQL_Latin1_General_CP1_CI_AS"
 }
 
 Add-LabDiskDefinition -Name "CM01-DATA-01" -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
