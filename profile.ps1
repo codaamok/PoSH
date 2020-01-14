@@ -685,7 +685,7 @@ Function Change-Password ($domain,$samaccountname,$oldPassword,$newpassword){
 
 Function Update-Profile {
     try {
-        $R = Invoke-WebRequest https://www.cookadam.co.uk/scripts/profile.ps1 -OutFile $profile.CurrentUserAllHosts -PassThru -ErrorAction Stop
+        $R = Invoke-WebRequest https://www.cookadam.co.uk/profile -OutFile $profile.CurrentUserAllHosts -PassThru -ErrorAction Stop
     }
     catch {
         Write-Host "Error: " -ForegroundColor Red -NoNewline
