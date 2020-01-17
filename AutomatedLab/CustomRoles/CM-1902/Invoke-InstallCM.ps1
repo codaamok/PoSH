@@ -558,9 +558,15 @@ UseProxy=0
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
+    #region Restart computer
+    Write-ScreenInfo -Message "Restarting server" -TaskStart
+    Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
     #region Extend the AD Schema
     Write-ScreenInfo -Message "Extending the AD Schema" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Extending the AD Schema" -Variable (Get-Variable -Name VMSccmBinariesDirectory) -ScriptBlock {
+    $job = Invoke-LabCommand -ActivityName "Extending the AD Schema" -Variable (Get-Variable -Name "VMSccmBinariesDirectory") -ScriptBlock {
         $path = Join-Path -Path $VMSccmBinariesDirectory -ChildPath "SMSSETUP\BIN\X64\extadsch.exe"
         Start-Process $path -Wait -PassThru -ErrorAction "Stop"
     }
@@ -755,12 +761,6 @@ UseProxy=0
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
-    
-    <##region Restart
-    Write-ScreenInfo -Message "Restarting server" -TaskStart
-    Restart-LabVM -ComputerName $SccmServerName -Wait -ErrorAction "Stop"
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion#>
 
     #region Run WSUS post configuration tasks
     Write-ScreenInfo -Message "Running WSUS post configuration tasks" -TaskStart
