@@ -1,12 +1,11 @@
 function Copy-CMTSDeployments {
     <#
     .SYNOPSIS
-        A function to return the members for a Configuration Baseline (CI) deployment of a particular status, e.g. compliant, noncompliant or error.
-    .DESCRIPTION
-        This function will let you retrieve the list of members for a CI deployment of a particular status. It queries the site server's WMI so the console is not necessary and it can be ran remotely.
+        A function to copy deployments from one task sequence to another. Modify the New-CMTaskSequenceDeployment parameters in the splat as desired.
     .EXAMPLE
-        PS C:\> Get-CMBaselineDeploymentStatusMembers -BaslineName "CB - Name of my baseline" -CollectionName "All Desktop and Server Clients" -Status NonCompliant -SiteServer server.contoso.com
-            Gets all the members that are "NonCompliant" for the baseline "CB - Name of my baseline" deployed to "All Desktop and Server Clients"
+        PS C:\> Copy-CMTSDeployments -taskSequenceId_old "ABC0037A" -taskSequenceId_new "ABC004EA" -ExcludeCollections "ABC0133F", "ABC01340"
+        
+        Gathers all deployments from task sequence ABC0037A and deploys them to ABC004EA, excluding ABC0133F and ABC01340.
     .NOTES
         Author: Adam Cook
         Contact: @codaamok
