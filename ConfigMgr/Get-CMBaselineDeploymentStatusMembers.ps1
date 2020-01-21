@@ -1,4 +1,4 @@
-Function Get-CMBaselineDeploymentStatusMembers {
+function Get-CMBaselineDeploymentStatusMembers {
     <#
     .SYNOPSIS
         A function to return the members for a Configuration Baseline (CI) deployment of a particular status, e.g. compliant, noncompliant or error.
@@ -13,7 +13,7 @@ Function Get-CMBaselineDeploymentStatusMembers {
         Created: 2019-10-14
         Updated: 2019-10-14
     #>
-    param (
+    Param (
         [Parameter(Mandatory=$true)]
         [string]
         $BaslineName,
