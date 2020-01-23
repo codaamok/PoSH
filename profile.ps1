@@ -1863,7 +1863,7 @@ Function New-ModuleDirStructure {
         Description         = $Description
         PowerShellVersion   = $PowerShellVersion
         Author              = $Author
-        FormatsToProcess    = "$ModuleName.Format.ps1xml"
+        # FormatsToProcess    = "$ModuleName.Format.ps1xml"
     }
     New-ModuleManifest @NewModuleManifestSplat
 
