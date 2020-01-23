@@ -1854,7 +1854,7 @@ Function New-ModuleDirStructure {
 
     #Create the module and related files
     New-Item "$Path\$ModuleName\$ModuleName.psm1" -ItemType File -Force
-    New-Item "$Path\$ModuleName\$ModuleName.Format.ps1xml" -ItemType File -Force
+    #New-Item "$Path\$ModuleName\$ModuleName.Format.ps1xml" -ItemType File -Force
     New-Item "$Path\$ModuleName\en-US\about_$ModuleName.help.txt" -ItemType File -Force
     #New-Item "$Path\Tests\$ModuleName.Tests.ps1" -ItemType File -Force
     $NewModuleManifestSplat = @{
