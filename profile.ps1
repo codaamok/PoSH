@@ -1539,7 +1539,7 @@ Function New-RebootScheduledTask {
 
     $Description = "{0} - created by {1} on {2}" -f $Description, $env:USERNAME, (Get-Date)
 
-    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NonInteractive -NoLogo -NoProfile -Command 'Write-Host Hello'"
+    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NonInteractive -NoLogo -NoProfile -Command 'Restart-Computer -Force'"
     $Trigger = New-ScheduledTaskTrigger -Once -At $Time
     $Settings = New-ScheduledTaskSettingsSet
     $Task = New-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -Description $Description
