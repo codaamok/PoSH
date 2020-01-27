@@ -1482,8 +1482,68 @@ Function Shamefully-ClearSoftwareDistributionFolder {
     Get-Service -Name "bits","Windows Update" | Start-Service
 }
 
-Function Create-RebootScheduledTask {
-    # tbc
+Function New-RebootScheduledTask {
+    Param(
+        [Parameter()]
+        [String]$ComputerName,
+        [Parameter(Mandatory)]
+        [Datetime]$Time,
+        [Parameter(Mandatory)]
+        [String]$Description,
+        [Parameter()]
+        [String]$TaskName = "Itergy - Reboot",
+        [Parameter()]
+        [String]$TaskPath = "\",
+        [Parameter()]
+        [PSCredential]$Credential,
+        [Parameter()]
+        [Switch]$Force
+    )
+
+    $GetScheduledTaskSplat = @{
+        TaskName = $TaskName
+        TaskPath = $TaskPath
+        ErrorAction = "SilentlyContinue"
+    }
+
+    if ($PSBoundParameters.ContainsKey("ComputerName")) {
+        $NewCimSession = @{
+            ComputerName = $ComputerName
+            ErrorAction = "Stop"
+        }
+        if ($PSBoundParameters.ContainsKey("Credential")) {
+            $NewCimSession["Credential"] = $Credential
+        }
+        $Session = New-CimSession @NewCimSession
+        $GetScheduledTaskSplat["CimSession"] = $Session
+    }
+
+    if (Get-ScheduledTask @GetScheduledTaskSplat) {
+        if ($Force.IsPresent) {
+            $UnregisterScheduledTaskSplat = @{
+                TaskName = $TaskName
+                TaskPath = $TaskPath
+                Confirm = $false
+                ErrorAction = "Stop"
+            } 
+            if ($PSBoundParameters.ContainsKey("ComputerName")) {
+                $UnregisterScheduledTaskSplat["CimSession"] = $Session
+            }
+            Unregister-ScheduledTask @UnregisterScheduledTaskSplat
+        }
+        else {
+            Write-Warning "Scheduled task already exists, use -Force to recreate"
+            return
+        }
+    }
+
+    $Description = "{0} - created by {1} on {2}" -f $Description, $env:USERNAME, (Get-Date)
+
+    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NonInteractive -NoLogo -NoProfile -Command 'Write-Host Hello'"
+    $Trigger = New-ScheduledTaskTrigger -Once -At $Time
+    $Settings = New-ScheduledTaskSettingsSet
+    $Task = New-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -Description $Description
+    Register-ScheduledTask -TaskName $TaskName -TaskPath $TaskPath -InputObject $Task -User "System" -CimSession $Session
 }
 
 Function WmiExec {
