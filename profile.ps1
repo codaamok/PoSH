@@ -832,28 +832,39 @@ Function Get-WUInstalledUpdates {
         [Parameter()]
         [string]$ComputerName,
         [Parameter()]
-        [int]$NumberOf = 0,
+        [PSCredential]$Credential,
         [Parameter()]
-        [PSCredential]$Credential
+        [Switch]$ResolveKB
     )
+    if ($ResolveKB.IsPresent -And (-not(Get-Module kbupdate))) {
+        Import-Module "kbupdate" -ErrorAction "Stop"
+    }
     $getHotFixSplat = @{
-        Verbose = $true
+        ErrorAction = "Stop"
     }
     if ($PSBoundParameters.ContainsKey('Credential')) {
-        $getHotFixSplat.Add('Credential', $Credential)
+        $getHotFixSplat['Credential'] = $Credential
     }
-    if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-        $getHotFixSplat.Add('ComputerName', $ComputerName)
+    if ($PSBoundParameters.ContainsKey('ComputerName')) {
+        $getHotFixSplat['ComputerName'] = $ComputerName
     }
     $Updates = Get-HotFix @getHotFixSplat
-    $Updates = $Updates | Select-Object Description, HotFixId, InstalledBy,@{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}} | Sort-Object InstalledOn -Descending
-    switch -Regex ($NumberOf) {
-        "[1-9]+" {
-            return $Updates | Select-Object -First $NumberOf
-        }
-        default {
-            return $Updates
-        }
+    if ($ResolveKB.IsPresent) {
+        $Updates | Select-Object @(
+            @{l="Title";e={[String]::Join(", ", (Get-KbUpdate -Pattern $_.HotfixId -Simple).Title)}}
+            "Description",
+            "HotFixId",
+            "InstalledBy",
+            @{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}}
+        )
+    }
+    else {
+        $Updates | Select-Object @(
+            "Description",
+            "HotFixId",
+            "InstalledBy",
+            @{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}}
+        )
     }
 }
 
@@ -1035,6 +1046,29 @@ Function Remove-WUWSUSRegKeys {
         Get-Job | Receive-Job
         Get-Job | Remove-Job
     }    
+}
+
+function Get-OS {
+    Param (
+        [Parameter(Mandatory)]
+        [String]$ComputerName,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    $newCimSessionSplat = @{
+        ComputerName = $ComputerName
+        ErrorAction = "Stop"
+    }
+    if ($PSBoundParameters.ContainsKey("Credential")) {
+        $newCimSessionSplat["Credential"] = $Credential
+    }
+    $Session = New-CimSession @newCimSessionSplat 
+    $getCimInstanceSplat = @{
+        Query = "Select Caption from Win32_OperatingSystem"
+        CimSession = $Session
+    }
+    Get-CimInstance @getCimInstanceSplat | Select-Object -ExpandProperty Caption
+    Remove-CimSession $Session
 }
 
 Function Invoke-CMClientAction {
@@ -1472,14 +1506,53 @@ Function Shamefully-ResetBITS {
 }
 
 Function Shamefully-ClearSoftwareDistributionFolder {
-    Get-Service -Name "bits","Windows Update" | Stop-Service -Force
-    Start-Process "ipconfig" -ArgumentList "/flushdns"
-    $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-    Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force
-    Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force
-    $path = "{0}\SoftwareDistribution" -f $env:windir
-    Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force
-    Get-Service -Name "bits","Windows Update" | Start-Service
+    Param( 
+        [Parameter()]
+        [String[]]$ComputerName,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    $InvokeCommandSplat = @{
+        ScriptBlock = {
+            $Result = @{
+                ComputerName = $env:COMPUTERNAME
+            }
+            try {
+                Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop"
+                Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
+                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
+                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
+                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+                $path = "{0}\SoftwareDistribution" -f $env:windir
+                Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force -ErrorAction "Stop"
+                Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
+                $Result["Result"] = "Success"
+            }
+            catch {
+                $Result["Result"] = $error[0].Exception.Message
+            }
+            [PSCustomObject]$Result
+        }
+    }
+    if ($PSBoundParameters.ContainsKey("Credential")) {
+        $InvokeCommandSplat["Credential"] = $Credential
+    }
+    $Jobs = ForEach ($Computer in $ComputerName) {
+        if ($PSBoundParameters.ContainsKey("ComputerName")) {
+            $InvokeCommandSplat["ComputerName"] = $Computer
+        }
+        Invoke-Command @InvokeCommandSplat -AsJob
+    }
+    while (Get-Job -State "Running") {
+        $TotalJobs = $Jobs.count
+        $NotRunning = $Jobs | Where-Object { $_.State -ne "Running" }
+        $Running = $Jobs | Where-Object { $_.State -eq "Running" }
+        Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
+        Start-Sleep -Seconds 2
+    }
+    Get-Job | Receive-Job
+    Get-Job | Remove-Job  
+    
 }
 
 Function New-RebootScheduledTask {
