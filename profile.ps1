@@ -4,32 +4,37 @@ Function prompt {
     # .Link
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent()
-    switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-        $true {
-            $adminfg = "red"
-        }
-        $false {
-            $adminfg = "white"
-        }
+    if ($PSVersionTable.Version -ge [System.Version]6) {
+        "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) ";
     }
-    switch ((Get-Location).Provider.Name) {
-        "FileSystem"    { $fg = "green"}
-        "Registry"      { $fg = "magenta"}
-        "wsman"         { $fg = "cyan"}
-        "Environment"   { $fg = "yellow"}
-        "Certificate"   { $fg = "darkcyan"}
-        "Function"      { $fg = "gray"}
-        "alias"         { $fg = "darkgray"}
-        "variable"      { $fg = "darkgreen"}
-        default         { $fg = $host.ui.rawui.ForegroundColor}
+    else {
+        $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+        switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
+            $true {
+                $adminfg = "red"
+            }
+            $false {
+                $adminfg = "white"
+            }
+        }
+        switch ((Get-Location).Provider.Name) {
+            "FileSystem"    { $fg = "green"}
+            "Registry"      { $fg = "magenta"}
+            "wsman"         { $fg = "cyan"}
+            "Environment"   { $fg = "yellow"}
+            "Certificate"   { $fg = "darkcyan"}
+            "Function"      { $fg = "gray"}
+            "alias"         { $fg = "darkgray"}
+            "variable"      { $fg = "darkgreen"}
+            default         { $fg = $host.ui.rawui.ForegroundColor}
+        }
+        Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
+        Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
+        Write-Host " PS " -NoNewline -ForegroundColor $adminfg
+        Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
+        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
+        Write-Host "" 
     }
-    Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
-    Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
-    Write-Host " PS " -NoNewline -ForegroundColor $adminfg
-    Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
-    Write-Output "$('>' * ($nestedPromptLevel + 1)) "
-    Write-Host "" 
 }
 
 Function Reset-CMClientPolicy {
