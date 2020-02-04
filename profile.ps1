@@ -4,7 +4,7 @@ Function prompt {
     # .Link
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
-    if ($PSVersionTable.Version -ge [System.Version]6) {
+    if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
         "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) ";
     }
     else {
