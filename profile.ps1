@@ -5,7 +5,7 @@ Function prompt {
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
     if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
-        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, [System.Net.Dns]::GetHostName(), (Get-Date -Format "HH:mm:ss")) -NoNewline
+        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, $(hostname), (Get-Date -Format "HH:mm:ss")) -NoNewline
         Write-Host $executionContext.SessionState.Path.CurrentLocation -ForegroundColor "Green"
         Write-Output "$('>' * ($nestedPromptLevel + 1)) "
         #Write-Host "[$env:USER@$Hostname] " -NoNewline
@@ -38,10 +38,6 @@ Function prompt {
         Write-Output "$('>' * ($nestedPromptLevel + 1)) "
         Write-Host "" 
     }
-}
-
-Function Get-HostName {
-
 }
 
 Function Reset-CMClientPolicy {
