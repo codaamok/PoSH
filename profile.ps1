@@ -1134,23 +1134,23 @@ Function Invoke-CMClientAction {
     Get-Job | Remove-Job
 }
 
-Function Get-BootTime {
+Function Get-Boot {
     Param (
-        [Parameter(Mandatory=$false,Position=0)]
+        [Parameter()]
         [string]$ComputerName,
-        [Parameter(Mandatory=$false)]
+        [Parameter()]
         [PSCredential]$Credential
     )
     $HashArguments = @{
         ClassName = "Win32_OperatingSystem"
     }
-    if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-        $HashArguments.Add("ComputerName", $ComputerName)
+    if ($PSBoundParameters.ContainsKey("ComputerName")) {
+        $HashArguments["ComputerName"] = $ComputerName
     }
     if ($PSBoundParameters.ContainsKey('Credential')) {
-        $HashArguments.Add('Credential', $Credential)
+        $HashArguments["Credential"] = $Credential
     }
-    Get-WmiObject @HashArguments | Select-Object -ExpandProperty LastBootUpTime
+    Get-CimInstance @HashArguments | Select-Object PSCompuiterName, LastBootUpTime
 }
 
 Function Get-Reboots {
