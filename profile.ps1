@@ -4,32 +4,44 @@ Function prompt {
     # .Link
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent()
-    switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-        $true {
-            $adminfg = "red"
-        }
-        $false {
-            $adminfg = "white"
-        }
+    if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
+        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, [System.Net.Dns]::GetHostName(), (Get-Date -Format "HH:mm:ss")) -NoNewline
+        Write-Host $executionContext.SessionState.Path.CurrentLocation -ForegroundColor "Green"
+        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
+        #Write-Host "[$env:USER@$Hostname] " -NoNewline
     }
-    switch ((Get-Location).Provider.Name) {
-        "FileSystem"    { $fg = "green"}
-        "Registry"      { $fg = "magenta"}
-        "wsman"         { $fg = "cyan"}
-        "Environment"   { $fg = "yellow"}
-        "Certificate"   { $fg = "darkcyan"}
-        "Function"      { $fg = "gray"}
-        "alias"         { $fg = "darkgray"}
-        "variable"      { $fg = "darkgreen"}
-        default         { $fg = $host.ui.rawui.ForegroundColor}
+    else {
+        $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+        switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
+            $true {
+                $adminfg = "red"
+            }
+            $false {
+                $adminfg = "white"
+            }
+        }
+        switch ((Get-Location).Provider.Name) {
+            "FileSystem"    { $fg = "green"}
+            "Registry"      { $fg = "magenta"}
+            "wsman"         { $fg = "cyan"}
+            "Environment"   { $fg = "yellow"}
+            "Certificate"   { $fg = "darkcyan"}
+            "Function"      { $fg = "gray"}
+            "alias"         { $fg = "darkgray"}
+            "variable"      { $fg = "darkgreen"}
+            default         { $fg = $host.ui.rawui.ForegroundColor}
+        }
+        Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
+        Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
+        Write-Host " PS " -NoNewline -ForegroundColor $adminfg
+        Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
+        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
+        Write-Host "" 
     }
-    Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
-    Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
-    Write-Host " PS " -NoNewline -ForegroundColor $adminfg
-    Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
-    Write-Output "$('>' * ($nestedPromptLevel + 1)) "
-    Write-Host "" 
+}
+
+Function Get-HostName {
+
 }
 
 Function Reset-CMClientPolicy {
