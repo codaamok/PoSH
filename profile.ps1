@@ -1137,7 +1137,7 @@ Function Invoke-CMClientAction {
 Function Get-Boot {
     Param (
         [Parameter()]
-        [string]$ComputerName,
+        [String[]]$ComputerName,
         [Parameter()]
         [PSCredential]$Credential
     )
@@ -1150,7 +1150,7 @@ Function Get-Boot {
     if ($PSBoundParameters.ContainsKey('Credential')) {
         $HashArguments["Credential"] = $Credential
     }
-    Get-CimInstance @HashArguments | Select-Object PSCompuiterName, LastBootUpTime
+    Get-CimInstance @HashArguments | Select-Object PSComputerName, LastBootUpTime
 }
 
 Function Get-Reboots {
