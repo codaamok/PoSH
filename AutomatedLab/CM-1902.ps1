@@ -63,6 +63,9 @@
 
 .PARAMETER LabName
     The name of the AutomatedLab lab created by this script.
+.PARAMETER LabPath
+    The path where you would like to save the Lab config files.
+    The scripts appends the lab name to the path you give. For example, if -LabName is "CMLab01" and -LabPath is "E:\Labs" then the lab files will be saved in "E:\Labs\CMLab01".
 .PARAMETER VMPath
     The path where you would like to save the VM data (.vhdx and .vmcx files) for this lab. 
     The scripts appends the lab name to the path you give. For example, if -LabName is "CMLab01" and -VMPath is "C:\VMs" then the VMs will be saved in "C:\VMs\CMLab01".
@@ -145,6 +148,9 @@
 Param (
     [Parameter()]
     [String]$LabName = "CMLab01",
+    
+    [Parameter()]
+    [String]$LabPath = $null,
 
     [Parameter()]
     [ValidateScript({
@@ -259,6 +265,10 @@ $NewLabDefinitionSplat = @{
     DefaultVirtualizationEngine = "HyperV"
     ReferenceDiskSizeInGB       = 100
     ErrorAction                 = "Stop"
+}
+if ($LabPath -ne $null){
+	$LabPath = $LabPath -replace "(.*)\\$","`$1"
+    $NewLabDefinitionSplat.Add("Path",($LabPath+'\'+$LabName))
 }
 if ($PSBoundParameters.ContainsKey("VMPath")) { 
     $Path = Join-Path -Path $VMPath -ChildPath $LabName
