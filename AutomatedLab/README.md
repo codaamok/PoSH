@@ -8,4 +8,4 @@ Here you will find my scripts that I've made to build out my lab environments.
 
 [Click here](CM-1902.md) for README for CM-1902.
 
-Check out my WinAdmins blog post for a write up on how to get going with this. (link tbc)
+Check out my [WinAdmins blog post](https://winadmins.blog/configmgr/build-a-configmgr-lab-with-automatedlab-quick-and-simple/) for a write up on how to get going with this.)
