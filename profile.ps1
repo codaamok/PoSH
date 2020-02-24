@@ -2056,12 +2056,17 @@ Function New-ModuleDirStructure {
 function ConvertTo-HexString {
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ValueFromPipeline)]
         [String]$String
     )
-    ForEach ($char in $String.ToCharArray()) {
-        [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
-    }
+    [String]::Join(
+        " ", 
+        $(
+            ForEach ($char in $String.ToCharArray()) {
+                [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
+            }
+        )
+    )
 }
 
 Function Get-MyCommands {
