@@ -2055,18 +2055,43 @@ Function New-ModuleDirStructure {
 
 function ConvertTo-HexString {
     [CmdletBinding()]
-    Param (
+    param (
         [Parameter(Mandatory, ValueFromPipeline)]
         [String]$String
     )
-    [String]::Join(
-        " ", 
-        $(
-            ForEach ($char in $String.ToCharArray()) {
-                [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
-            }
-        )
+    begin { }
+    process {
+        foreach ($char in $String.ToCharArray()) {
+            [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
+        }
+    }
+}
+
+function ConvertTo-ByteArrayHex {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
     )
+    begin { }
+    process {
+        [Byte[]]$bytes = for ($i = 0; $i -lt $String.Length; $i += 2) {
+            '0x{0}{1}' -f $String[$i], $String[$i + 1]
+        }
+        $bytes
+    }
+}
+
+function ConvertTo-ByteArrayString {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        [System.Text.Encoding]::UTF8.GetBytes($String)
+    }
 }
 
 Function Get-MyCommands {
