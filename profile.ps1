@@ -2053,6 +2053,17 @@ Function New-ModuleDirStructure {
     # Copy the public/exported functions into the public folder, private functions into private folder
 }
 
+function ConvertTo-HexString {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory)]
+        [String]$String
+    )
+    ForEach ($char in $String.ToCharArray()) {
+        [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
+    }
+}
+
 Function Get-MyCommands {
     Get-Content -Path $profile.CurrentUserAllHosts | Select-String -Pattern "^function.+" | ForEach-Object {
         [Regex]::Matches($_, "^function ([a-z.-]+)","IgnoreCase").Groups[1].Value
