@@ -1999,7 +1999,7 @@ function Set-Secure {
     $path = '{0}\Documents\Keys\{1}.xml' -f $home, $Name
     $folder = Split-Path -Path $path -Parent
     if (Test-Path $path) {
-        $credential = Get-Credential (Get-Secure $Name -NoClipboard).Username
+        $credential = Get-Credential (Get-Secure $Name).Username
     } else {
         if (-not(Test-Path $folder)) {
             New-Item -Path $folder -ItemType "Directory" -ErrorAction Stop
