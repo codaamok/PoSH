@@ -1485,9 +1485,12 @@ Function Shamefully-ResetBITS {
             try {
                 Get-Service -Name "bits" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop" -WarningAction "SilentlyContinue"
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
-                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
-                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if (!$_.FullName.EndsWith(".log")) {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
                 Get-Service -Name "bits" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
                 $Result["Result"] = "Success"
             }
@@ -1513,8 +1516,8 @@ Function Shamefully-ResetBITS {
         Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
         Start-Sleep -Seconds 2
     }
-    Get-Job | Receive-Job
-    Get-Job | Remove-Job    
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs   
 }
 
 Function Shamefully-ClearSoftwareDistributionFolder {
@@ -1532,11 +1535,17 @@ Function Shamefully-ClearSoftwareDistributionFolder {
             try {
                 Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop"
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
-                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
-                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if (!$_.FullName.EndsWith(".log")) {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
+
                 $path = "{0}\SoftwareDistribution" -f $env:windir
                 Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force -ErrorAction "Stop"
+
                 Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
                 $Result["Result"] = "Success"
             }
@@ -1562,8 +1571,8 @@ Function Shamefully-ClearSoftwareDistributionFolder {
         Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
         Start-Sleep -Seconds 2
     }
-    Get-Job | Receive-Job
-    Get-Job | Remove-Job  
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs 
     
 }
 
