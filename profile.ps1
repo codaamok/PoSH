@@ -1487,7 +1487,7 @@ Function Shamefully-ResetBITS {
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
                 $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
                 Get-ChildItem -Path $path | ForEach-Object {
-                    if (!$_.FullName.EndsWith(".log")) {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
                         Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
                     }
                 }
@@ -1538,7 +1538,7 @@ Function Shamefully-ClearSoftwareDistributionFolder {
 
                 $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
                 Get-ChildItem -Path $path | ForEach-Object {
-                    if (!$_.FullName.EndsWith(".log")) {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
                         Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
                     }
                 }
