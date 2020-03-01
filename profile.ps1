@@ -1142,23 +1142,23 @@ Function Invoke-CMClientAction {
     Get-Job | Remove-Job
 }
 
-Function Get-BootTime {
+Function Get-Boot {
     Param (
-        [Parameter(Mandatory=$false,Position=0)]
-        [string]$ComputerName,
-        [Parameter(Mandatory=$false)]
+        [Parameter()]
+        [String[]]$ComputerName,
+        [Parameter()]
         [PSCredential]$Credential
     )
     $HashArguments = @{
         ClassName = "Win32_OperatingSystem"
     }
-    if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-        $HashArguments.Add("ComputerName", $ComputerName)
+    if ($PSBoundParameters.ContainsKey("ComputerName")) {
+        $HashArguments["ComputerName"] = $ComputerName
     }
     if ($PSBoundParameters.ContainsKey('Credential')) {
-        $HashArguments.Add('Credential', $Credential)
+        $HashArguments["Credential"] = $Credential
     }
-    Get-WmiObject @HashArguments | Select-Object -ExpandProperty LastBootUpTime
+    Get-CimInstance @HashArguments | Select-Object PSComputerName, LastBootUpTime
 }
 
 Function Get-Reboots {
@@ -1481,9 +1481,12 @@ Function Shamefully-ResetBITS {
             try {
                 Get-Service -Name "bits" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop" -WarningAction "SilentlyContinue"
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
-                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
-                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
                 Get-Service -Name "bits" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
                 $Result["Result"] = "Success"
             }
@@ -1509,8 +1512,8 @@ Function Shamefully-ResetBITS {
         Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
         Start-Sleep -Seconds 2
     }
-    Get-Job | Receive-Job
-    Get-Job | Remove-Job    
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs   
 }
 
 Function Shamefully-ClearSoftwareDistributionFolder {
@@ -1528,11 +1531,17 @@ Function Shamefully-ClearSoftwareDistributionFolder {
             try {
                 Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop"
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
-                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
-                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
+
                 $path = "{0}\SoftwareDistribution" -f $env:windir
                 Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force -ErrorAction "Stop"
+
                 Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
                 $Result["Result"] = "Success"
             }
@@ -1558,8 +1567,8 @@ Function Shamefully-ClearSoftwareDistributionFolder {
         Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
         Start-Sleep -Seconds 2
     }
-    Get-Job | Receive-Job
-    Get-Job | Remove-Job  
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs 
     
 }
 
@@ -1568,7 +1577,7 @@ Function New-RebootScheduledTask {
         [Parameter()]
         [String]$ComputerName,
         [Parameter(Mandatory)]
-        [Datetime]$Time,
+        [Datetime]$UTCTime,
         [Parameter(Mandatory)]
         [String]$Description,
         [Parameter()]
@@ -1587,6 +1596,10 @@ Function New-RebootScheduledTask {
         ErrorAction = "SilentlyContinue"
     }
 
+    $GetCimInstanceSplat = @{
+        ErrorAction = "Stop"
+    }
+
     if ($PSBoundParameters.ContainsKey("ComputerName")) {
         $NewCimSession = @{
             ComputerName = $ComputerName
@@ -1596,6 +1609,7 @@ Function New-RebootScheduledTask {
             $NewCimSession["Credential"] = $Credential
         }
         $Session = New-CimSession @NewCimSession
+        $GetCimInstanceSplat["CimSession"] = $Session
         $GetScheduledTaskSplat["CimSession"] = $Session
     }
 
@@ -1618,13 +1632,40 @@ Function New-RebootScheduledTask {
         }
     }
 
-    $Description = "{0} - created by {1} on {2}" -f $Description, $env:USERNAME, (Get-Date)
+    try {
+        $TimeZone = Get-CimInstance -ClassName "Win32_TimeZone" @GetCimInstanceSplat
+    }
+    catch {
+        Write-Warning "Could not determine target system's timezone"
+    }
 
-    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NonInteractive -NoLogo -NoProfile -Command 'Restart-Computer -Force'"
-    $Trigger = New-ScheduledTaskTrigger -Once -At $Time
+    try {
+        $LocalTime = Get-CimInstance -ClassName "Win32_LocalTime" @GetCimInstanceSplat
+        $LocalTime = Get-Date -Year $LocalTime.year -Month $LocalTime.month -day $LocalTime.day -Hour $LocalTime.hour -Minute $LocalTime.minute -Second $LocalTime.Second
+    }
+    catch {
+        Write-Warning "Could not detemrine target system's local time"
+    }
+
+    $Y = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Continue with lab build"
+    $N = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Do not continue with lab build"
+    $Options = [System.Management.Automation.Host.ChoiceDescription[]]($Y, $N)
+    $Message = "Target machine's timezone is '{0}' ('{1}'), would you like to continue with '{2} UTC?'" -f $TimeZone.Caption, $LocalTime, $UTCTime.ToUniversalTime()
+    $Result = $host.ui.PromptForChoice($null, $Message, $Options, 1)
+
+    if ($Result -ge 1) {
+        return
+    }
+
+    $Description = "{0} - created by {1} on {2} (UTC)" -f $Description, $env:USERNAME, $UTCTime.ToUniversalTime()
+
+    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NonInteractive -NoLogo -NoProfile -Command "Restart-Computer -Force"'
+    $Trigger = New-ScheduledTaskTrigger -Once -At $UTCTime.ToUniversalTime()
     $Settings = New-ScheduledTaskSettingsSet
     $Task = New-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -Description $Description
     Register-ScheduledTask -TaskName $TaskName -TaskPath $TaskPath -InputObject $Task -User "System" -CimSession $Session
+
+    if ($Session) { Remove-CimSession -CimSession $Session }
 }
 
 Function Get-Dns {
@@ -1995,7 +2036,7 @@ function Set-Secure {
     $path = '{0}\Documents\Keys\{1}.xml' -f $home, $Name
     $folder = Split-Path -Path $path -Parent
     if (Test-Path $path) {
-        $credential = Get-Credential (Get-Secure $Name -NoClipboard).Username
+        $credential = Get-Credential (Get-Secure $Name).Username
     } else {
         if (-not(Test-Path $folder)) {
             New-Item -Path $folder -ItemType "Directory" -ErrorAction Stop
@@ -2047,6 +2088,47 @@ Function New-ModuleDirStructure {
     New-ModuleManifest @NewModuleManifestSplat
 
     # Copy the public/exported functions into the public folder, private functions into private folder
+}
+
+function ConvertTo-HexString {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        foreach ($char in $String.ToCharArray()) {
+            [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
+        }
+    }
+}
+
+function ConvertTo-ByteArrayHex {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        [Byte[]]$bytes = for ($i = 0; $i -lt $String.Length; $i += 2) {
+            '0x{0}{1}' -f $String[$i], $String[$i + 1]
+        }
+        $bytes
+    }
+}
+
+function ConvertTo-ByteArrayString {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        [System.Text.Encoding]::UTF8.GetBytes($String)
+    }
 }
 
 Function Get-MyCommands {

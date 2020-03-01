@@ -32,7 +32,7 @@ function Get-CMBaselineDeploymentStatusMembers {
         $SiteServer
     )
 
-    $SiteCode = Get-WmiObject -Query "SELECT SiteCode FROM SMS_ProviderLocation" -Namespace "ROOT\SMS" -ComputerName $SiteServer | Select-Object -ExpandProperty SiteCode
+    $SiteCode = Get-CimInstance -Query "SELECT SiteCode FROM SMS_ProviderLocation" -Namespace "ROOT\SMS" -ComputerName $SiteServer | Select-Object -ExpandProperty SiteCode
     $SiteNamespace = ("ROOT\SMS\site_{0}" -f $SiteCode)
 
     switch ($PSCmdlet.ParameterSetName) {
@@ -44,16 +44,16 @@ function Get-CMBaselineDeploymentStatusMembers {
         }
     }
 
-    $Collection = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
+    $Collection = Get-CimInstance -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
     $Query = "SELECT CI_UniqueID,LocalizedDescription,DateCreated,DateLastModified,CreatedBy FROM SMS_ConfigurationBaselineInfo WHERE LocalizedDisplayName=`"{0}`"" -f $BaslineName
-    $ConfigurationBaselineInfo = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
+    $ConfigurationBaselineInfo = Get-CimInstance -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer
 
     $Query = "SELECT AssignmentID FROM SMS_BaselineAssignment WHERE AssignedCI_UniqueID=`"{0}`" AND TargetCollectionID=`"{1}`"" -f $ConfigurationBaselineInfo.CI_uniqueID, $Collection.CollectionID
-    $AssignmentID = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssignmentID
+    $AssignmentID = Get-CimInstance -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssignmentID
 
     $Query = "SELECT AssetName FROM SMS_DCMDeployment{0}AssetDetails WHERE AssignmentID=`"{1}`"" -f $Status, $AssignmentID
-    $Members = Get-WmiObject -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssetName
+    $Members = Get-CimInstance -Query $Query -Namespace $SiteNamespace -ComputerName $SiteServer | Select-Object -ExpandProperty AssetName
 
     [PSCustomObject]@{
         BaselineName        = $BaslineName
@@ -62,7 +62,8 @@ function Get-CMBaselineDeploymentStatusMembers {
         DateLastModified    = $ConfigurationBaselineInfo.DateLastModified
         CreatedBy           = $ConfigurationBaselineInfo.CreatedBy
         ModifiedBy          = $ConfigurationBaselineInfo.ModifiedBy
-        TargetCollection    = ("{0} ({1})" -f $Collection.Name, $Collection.CollectionID)
+        CollectionName      = $Collection.Name
+        CollectionId        = $Collection.CollectionID
         Compliance          = $Status
         MembersCount        = $Members.count
         Members             = $Members
