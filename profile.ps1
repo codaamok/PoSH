@@ -4,32 +4,40 @@ Function prompt {
     # .Link
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent()
-    switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-        $true {
-            $adminfg = "red"
-        }
-        $false {
-            $adminfg = "white"
-        }
+    if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
+        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, $(hostname), (Get-Date -Format "HH:mm:ss")) -NoNewline
+        Write-Host $executionContext.SessionState.Path.CurrentLocation -ForegroundColor "Green"
+        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
+        #Write-Host "[$env:USER@$Hostname] " -NoNewline
     }
-    switch ((Get-Location).Provider.Name) {
-        "FileSystem"    { $fg = "green"}
-        "Registry"      { $fg = "magenta"}
-        "wsman"         { $fg = "cyan"}
-        "Environment"   { $fg = "yellow"}
-        "Certificate"   { $fg = "darkcyan"}
-        "Function"      { $fg = "gray"}
-        "alias"         { $fg = "darkgray"}
-        "variable"      { $fg = "darkgreen"}
-        default         { $fg = $host.ui.rawui.ForegroundColor}
+    else {
+        $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+        switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
+            $true {
+                $adminfg = "red"
+            }
+            $false {
+                $adminfg = "white"
+            }
+        }
+        switch ((Get-Location).Provider.Name) {
+            "FileSystem"    { $fg = "green"}
+            "Registry"      { $fg = "magenta"}
+            "wsman"         { $fg = "cyan"}
+            "Environment"   { $fg = "yellow"}
+            "Certificate"   { $fg = "darkcyan"}
+            "Function"      { $fg = "gray"}
+            "alias"         { $fg = "darkgray"}
+            "variable"      { $fg = "darkgreen"}
+            default         { $fg = $host.ui.rawui.ForegroundColor}
+        }
+        Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
+        Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
+        Write-Host " PS " -NoNewline -ForegroundColor $adminfg
+        Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
+        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
+        Write-Host "" 
     }
-    Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
-    Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
-    Write-Host " PS " -NoNewline -ForegroundColor $adminfg
-    Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
-    Write-Output "$('>' * ($nestedPromptLevel + 1)) "
-    Write-Host "" 
 }
 
 Function Reset-CMClientPolicy {
@@ -832,28 +840,39 @@ Function Get-WUInstalledUpdates {
         [Parameter()]
         [string]$ComputerName,
         [Parameter()]
-        [int]$NumberOf = 0,
+        [PSCredential]$Credential,
         [Parameter()]
-        [PSCredential]$Credential
+        [Switch]$ResolveKB
     )
+    if ($ResolveKB.IsPresent -And (-not(Get-Module kbupdate))) {
+        Import-Module "kbupdate" -ErrorAction "Stop"
+    }
     $getHotFixSplat = @{
-        Verbose = $true
+        ErrorAction = "Stop"
     }
     if ($PSBoundParameters.ContainsKey('Credential')) {
-        $getHotFixSplat.Add('Credential', $Credential)
+        $getHotFixSplat['Credential'] = $Credential
     }
-    if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-        $getHotFixSplat.Add('ComputerName', $ComputerName)
+    if ($PSBoundParameters.ContainsKey('ComputerName')) {
+        $getHotFixSplat['ComputerName'] = $ComputerName
     }
     $Updates = Get-HotFix @getHotFixSplat
-    $Updates = $Updates | Select-Object Description, HotFixId, InstalledBy,@{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}} | Sort-Object InstalledOn -Descending
-    switch -Regex ($NumberOf) {
-        "[1-9]+" {
-            return $Updates | Select-Object -First $NumberOf
-        }
-        default {
-            return $Updates
-        }
+    if ($ResolveKB.IsPresent) {
+        $Updates | Select-Object @(
+            @{l="Title";e={[String]::Join(", ", (Get-KbUpdate -Pattern $_.HotfixId -Simple).Title)}}
+            "Description",
+            "HotFixId",
+            "InstalledBy",
+            @{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}}
+        )
+    }
+    else {
+        $Updates | Select-Object @(
+            "Description",
+            "HotFixId",
+            "InstalledBy",
+            @{l="InstalledOn";e={[DateTime]::Parse($_.psbase.properties["installedon"].value,$([System.Globalization.CultureInfo]::GetCultureInfo("en-US")))}}
+        )
     }
 }
 
@@ -1037,6 +1056,29 @@ Function Remove-WUWSUSRegKeys {
     }    
 }
 
+function Get-OS {
+    Param (
+        [Parameter(Mandatory)]
+        [String]$ComputerName,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    $newCimSessionSplat = @{
+        ComputerName = $ComputerName
+        ErrorAction = "Stop"
+    }
+    if ($PSBoundParameters.ContainsKey("Credential")) {
+        $newCimSessionSplat["Credential"] = $Credential
+    }
+    $Session = New-CimSession @newCimSessionSplat 
+    $getCimInstanceSplat = @{
+        Query = "Select Caption from Win32_OperatingSystem"
+        CimSession = $Session
+    }
+    Get-CimInstance @getCimInstanceSplat | Select-Object -ExpandProperty Caption
+    Remove-CimSession $Session
+}
+
 Function Invoke-CMClientAction {
     Param( 
         [Parameter()]
@@ -1100,23 +1142,23 @@ Function Invoke-CMClientAction {
     Get-Job | Remove-Job
 }
 
-Function Get-BootTime {
+Function Get-Boot {
     Param (
-        [Parameter(Mandatory=$false,Position=0)]
-        [string]$ComputerName,
-        [Parameter(Mandatory=$false)]
+        [Parameter()]
+        [String[]]$ComputerName,
+        [Parameter()]
         [PSCredential]$Credential
     )
     $HashArguments = @{
         ClassName = "Win32_OperatingSystem"
     }
-    if ([String]::IsNullOrEmpty($ComputerName) -eq $false) {
-        $HashArguments.Add("ComputerName", $ComputerName)
+    if ($PSBoundParameters.ContainsKey("ComputerName")) {
+        $HashArguments["ComputerName"] = $ComputerName
     }
     if ($PSBoundParameters.ContainsKey('Credential')) {
-        $HashArguments.Add('Credential', $Credential)
+        $HashArguments["Credential"] = $Credential
     }
-    Get-WmiObject @HashArguments | Select-Object -ExpandProperty LastBootUpTime
+    Get-CimInstance @HashArguments | Select-Object PSComputerName, LastBootUpTime
 }
 
 Function Get-Reboots {
@@ -1439,9 +1481,12 @@ Function Shamefully-ResetBITS {
             try {
                 Get-Service -Name "bits" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop" -WarningAction "SilentlyContinue"
                 Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
-                $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-                Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force -ErrorAction "Stop"
-                Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force -ErrorAction "Stop"
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
                 Get-Service -Name "bits" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
                 $Result["Result"] = "Success"
             }
@@ -1467,23 +1512,198 @@ Function Shamefully-ResetBITS {
         Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
         Start-Sleep -Seconds 2
     }
-    Get-Job | Receive-Job
-    Get-Job | Remove-Job    
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs   
 }
 
 Function Shamefully-ClearSoftwareDistributionFolder {
-    Get-Service -Name "bits","Windows Update" | Stop-Service -Force
-    Start-Process "ipconfig" -ArgumentList "/flushdns"
-    $path = "{0}\Application Data\Microsoft\Network\Downloader" -f $env:ProgramData
-    Move-Item -LiteralPath $path\qmgr0.dat -Destination $path\qmgr0.dat.bak -Force
-    Move-Item -LiteralPath $path\qmgr1.dat -Destination $path\qmgr1.dat.bak -Force
-    $path = "{0}\SoftwareDistribution" -f $env:windir
-    Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force
-    Get-Service -Name "bits","Windows Update" | Start-Service
+    Param( 
+        [Parameter()]
+        [String[]]$ComputerName,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    $InvokeCommandSplat = @{
+        ScriptBlock = {
+            $Result = @{
+                ComputerName = $env:COMPUTERNAME
+            }
+            try {
+                Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Stop-Service -Force -ErrorAction "Stop"
+                Start-Process "ipconfig" -ArgumentList "/flushdns" -ErrorAction "Stop"
+
+                $path = "{0}\Microsoft\Network\Downloader" -f $env:ProgramData
+                Get-ChildItem -Path $path | ForEach-Object {
+                    if ($_.FullName -notmatch "\.log$|\.old$") {
+                        Move-Item -LiteralPath $_.FullName -Destination ($_.FullName + ".old") -Force -ErrorAction "Stop"
+                    }
+                }
+
+                $path = "{0}\SoftwareDistribution" -f $env:windir
+                Move-Item -LiteralPath $path -Destination ("{0}.old" -f $path) -Force -ErrorAction "Stop"
+
+                Get-Service -Name "bits","Windows Update" -ErrorAction "Stop" | Start-Service -ErrorAction "Stop"
+                $Result["Result"] = "Success"
+            }
+            catch {
+                $Result["Result"] = $error[0].Exception.Message
+            }
+            [PSCustomObject]$Result
+        }
+    }
+    if ($PSBoundParameters.ContainsKey("Credential")) {
+        $InvokeCommandSplat["Credential"] = $Credential
+    }
+    $Jobs = ForEach ($Computer in $ComputerName) {
+        if ($PSBoundParameters.ContainsKey("ComputerName")) {
+            $InvokeCommandSplat["ComputerName"] = $Computer
+        }
+        Invoke-Command @InvokeCommandSplat -AsJob
+    }
+    while (Get-Job -State "Running") {
+        $TotalJobs = $Jobs.count
+        $NotRunning = $Jobs | Where-Object { $_.State -ne "Running" }
+        $Running = $Jobs | Where-Object { $_.State -eq "Running" }
+        Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
+        Start-Sleep -Seconds 2
+    }
+    Receive-Job -Job $Jobs
+    Remove-Job -Job $Jobs 
+    
 }
 
-Function Create-RebootScheduledTask {
-    # tbc
+Function New-RebootScheduledTask {
+    Param(
+        [Parameter()]
+        [String]$ComputerName,
+        [Parameter(Mandatory)]
+        [Datetime]$UTCTime,
+        [Parameter(Mandatory)]
+        [String]$Description,
+        [Parameter()]
+        [String]$TaskName = "Itergy - Reboot",
+        [Parameter()]
+        [String]$TaskPath = "\",
+        [Parameter()]
+        [PSCredential]$Credential,
+        [Parameter()]
+        [Switch]$Force
+    )
+
+    $GetScheduledTaskSplat = @{
+        TaskName = $TaskName
+        TaskPath = $TaskPath
+        ErrorAction = "SilentlyContinue"
+    }
+
+    $GetCimInstanceSplat = @{
+        ErrorAction = "Stop"
+    }
+
+    if ($PSBoundParameters.ContainsKey("ComputerName")) {
+        $NewCimSession = @{
+            ComputerName = $ComputerName
+            ErrorAction = "Stop"
+        }
+        if ($PSBoundParameters.ContainsKey("Credential")) {
+            $NewCimSession["Credential"] = $Credential
+        }
+        $Session = New-CimSession @NewCimSession
+        $GetCimInstanceSplat["CimSession"] = $Session
+        $GetScheduledTaskSplat["CimSession"] = $Session
+    }
+
+    if (Get-ScheduledTask @GetScheduledTaskSplat) {
+        if ($Force.IsPresent) {
+            $UnregisterScheduledTaskSplat = @{
+                TaskName = $TaskName
+                TaskPath = $TaskPath
+                Confirm = $false
+                ErrorAction = "Stop"
+            } 
+            if ($PSBoundParameters.ContainsKey("ComputerName")) {
+                $UnregisterScheduledTaskSplat["CimSession"] = $Session
+            }
+            Unregister-ScheduledTask @UnregisterScheduledTaskSplat
+        }
+        else {
+            Write-Warning "Scheduled task already exists, use -Force to recreate"
+            return
+        }
+    }
+
+    try {
+        $TimeZone = Get-CimInstance -ClassName "Win32_TimeZone" @GetCimInstanceSplat
+    }
+    catch {
+        Write-Warning "Could not determine target system's timezone"
+    }
+
+    try {
+        $LocalTime = Get-CimInstance -ClassName "Win32_LocalTime" @GetCimInstanceSplat
+        $LocalTime = Get-Date -Year $LocalTime.year -Month $LocalTime.month -day $LocalTime.day -Hour $LocalTime.hour -Minute $LocalTime.minute -Second $LocalTime.Second
+    }
+    catch {
+        Write-Warning "Could not detemrine target system's local time"
+    }
+
+    $Y = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Continue with lab build"
+    $N = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Do not continue with lab build"
+    $Options = [System.Management.Automation.Host.ChoiceDescription[]]($Y, $N)
+    $Message = "Target machine's timezone is '{0}' ('{1}'), would you like to continue with '{2} UTC?'" -f $TimeZone.Caption, $LocalTime, $UTCTime.ToUniversalTime()
+    $Result = $host.ui.PromptForChoice($null, $Message, $Options, 1)
+
+    if ($Result -ge 1) {
+        return
+    }
+
+    $Description = "{0} - created by {1} on {2} (UTC)" -f $Description, $env:USERNAME, $UTCTime.ToUniversalTime()
+
+    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NonInteractive -NoLogo -NoProfile -Command "Restart-Computer -Force"'
+    $Trigger = New-ScheduledTaskTrigger -Once -At $UTCTime.ToUniversalTime()
+    $Settings = New-ScheduledTaskSettingsSet
+    $Task = New-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -Description $Description
+    Register-ScheduledTask -TaskName $TaskName -TaskPath $TaskPath -InputObject $Task -User "System" -CimSession $Session
+
+    if ($Session) { Remove-CimSession -CimSession $Session }
+}
+
+Function Get-Dns {
+    Param( 
+        [Parameter()]
+        [String[]]$ComputerName,
+        [Parameter(Mandatory)]
+        [String]$FirstOctet,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    $InvokeCommandSplat = @{
+        ScriptBlock = {
+            $InterfaceIndex = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress.StartsWith($FirstOctet) } | Select-Object -ExpandProperty InterfaceIndex
+            [PSCustomObject]@{
+                ComputerName = $env:COMPUTERNAME
+                DNSAddresses = [String]::Join(", ", (Get-DnsClientServerAddress -InterfaceIndex $InterfaceIndex -AddressFamily IPv4).ServerAddresses)
+            }
+        }
+    }
+    if ($PSBoundParameters.ContainsKey("Credential")) {
+        $InvokeCommandSplat["Credential"] = $Credential
+    }
+    $Jobs = ForEach ($Computer in $ComputerName) {
+        if ($PSBoundParameters.ContainsKey("ComputerName")) {
+            $InvokeCommandSplat["ComputerName"] = $Computer
+        }
+        Invoke-Command @InvokeCommandSplat -AsJob
+    }
+    while (Get-Job -State "Running") {
+        $TotalJobs = $Jobs.count
+        $NotRunning = $Jobs | Where-Object { $_.State -ne "Running" }
+        $Running = $Jobs | Where-Object { $_.State -eq "Running" }
+        Write-Progress -Activity "Waiting on results" -Status "$($TotalJobs-$NotRunning.count) Jobs Remaining: $($Running.Location)" -PercentComplete ($NotRunning.count/(0.1+$TotalJobs) * 100)
+        Start-Sleep -Seconds 2
+    }
+    Get-Job | Receive-Job
+    Get-Job | Remove-Job    
 }
 
 Function WmiExec {
@@ -1816,7 +2036,7 @@ function Set-Secure {
     $path = '{0}\Documents\Keys\{1}.xml' -f $home, $Name
     $folder = Split-Path -Path $path -Parent
     if (Test-Path $path) {
-        $credential = Get-Credential (Get-Secure $Name -NoClipboard).Username
+        $credential = Get-Credential (Get-Secure $Name).Username
     } else {
         if (-not(Test-Path $folder)) {
             New-Item -Path $folder -ItemType "Directory" -ErrorAction Stop
@@ -1825,6 +2045,90 @@ function Set-Secure {
         if ($null -eq $credential) { return }
     }
     $credential | Export-CliXml $path
+}
+
+Function New-ModuleDirStructure {
+    <#
+    .NOTES
+        http://ramblingcookiemonster.github.io/Building-A-PowerShell-Module/
+    #>
+    Param (
+        [Parameter(Mandatory)]
+        [String]$Path,
+        [Parameter(Mandatory)]
+        [String]$ModuleName,
+        [Parameter(Mandatory)]
+        [String]$Author,
+        [Parameter(Mandatory)]
+        [String]$Description,
+        [Parameter()]
+        [String]$PowerShellVersion = 5.1
+    )
+
+    # Create the module and private function directories
+    New-Item -Path $Path\$ModuleName -ItemType Directory -Force
+    New-Item -Path $Path\$ModuleName\Private -ItemType Directory -Force
+    New-Item -Path $Path\$ModuleName\Public -ItemType Directory -Force
+    New-Item -Path $Path\$ModuleName\en-US -ItemType Directory -Force # For about_Help files
+    #New-Item -Path $Path\Tests -ItemType Directory -Force
+
+    #Create the module and related files
+    New-Item "$Path\$ModuleName\$ModuleName.psm1" -ItemType File -Force
+    #New-Item "$Path\$ModuleName\$ModuleName.Format.ps1xml" -ItemType File -Force
+    New-Item "$Path\$ModuleName\en-US\about_$ModuleName.help.txt" -ItemType File -Force
+    #New-Item "$Path\Tests\$ModuleName.Tests.ps1" -ItemType File -Force
+    $NewModuleManifestSplat = @{
+        Path                = Join-Path -Path $Path -ChildPath $ModuleName | Join-Path -ChildPath "$ModuleName.psd1"
+        RootModule          = $ModuleName.psm1
+        Description         = $Description
+        PowerShellVersion   = $PowerShellVersion
+        Author              = $Author
+        # FormatsToProcess    = "$ModuleName.Format.ps1xml"
+    }
+    New-ModuleManifest @NewModuleManifestSplat
+
+    # Copy the public/exported functions into the public folder, private functions into private folder
+}
+
+function ConvertTo-HexString {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        foreach ($char in $String.ToCharArray()) {
+            [System.String]::Format("{0:X}", [System.Convert]::ToUInt32($char))
+        }
+    }
+}
+
+function ConvertTo-ByteArrayHex {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        [Byte[]]$bytes = for ($i = 0; $i -lt $String.Length; $i += 2) {
+            '0x{0}{1}' -f $String[$i], $String[$i + 1]
+        }
+        $bytes
+    }
+}
+
+function ConvertTo-ByteArrayString {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [String]$String
+    )
+    begin { }
+    process {
+        [System.Text.Encoding]::UTF8.GetBytes($String)
+    }
 }
 
 Function Get-MyCommands {

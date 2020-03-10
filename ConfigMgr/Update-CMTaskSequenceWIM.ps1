@@ -26,7 +26,7 @@
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
-param (
+Param (
     [Parameter(Mandatory=$true, Position = 0, HelpMessage="Package ID of the OS image.")]
     [string[]]
     $PackageID,
