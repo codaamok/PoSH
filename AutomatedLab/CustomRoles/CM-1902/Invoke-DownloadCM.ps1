@@ -1,9 +1,9 @@
-﻿param(
+﻿Param (
     [Parameter(Mandatory)]
-    [string]$SccmBinariesDirectory,
+    [string]$CMBinariesDirectory,
 
     [Parameter(Mandatory)]
-    [string]$SccmPreReqsDirectory
+    [string]$CMPreReqsDirectory
 )
 
 Write-ScreenInfo -Message "Starting CM binaries and prerequisites download process" -TaskStart
@@ -32,20 +32,20 @@ Write-ScreenInfo -Message "Activity done" -TaskEnd
 #region Extract CM binaries
 Write-ScreenInfo -Message "Extracting CM binaries from archive" -TaskStart
 
-if (-not (Test-Path -Path $SccmBinariesDirectory))
+if (-not (Test-Path -Path $CMBinariesDirectory))
 {
     try {
-        Expand-Archive -Path $CMZipObj.FullName -DestinationPath $SccmBinariesDirectory -Force -ErrorAction "Stop" -ErrorVariable "ExpandArchiveErr"
+        Expand-Archive -Path $CMZipObj.FullName -DestinationPath $CMBinariesDirectory -Force -ErrorAction "Stop" -ErrorVariable "ExpandArchiveErr"
     }
     catch {
-        $Message = "Failed to initiate extraction to '{0}' ({1})" -f $SccmBinariesDirectory, $ExpandArchiveErr.ErrorRecord.Exception.Message
+        $Message = "Failed to initiate extraction to '{0}' ({1})" -f $CMBinariesDirectory, $ExpandArchiveErr.ErrorRecord.Exception.Message
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $Message
     }
 }
 else
 {
-    Write-ScreenInfo -Message ("CM folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmBinariesDirectory)
+    Write-ScreenInfo -Message ("CM folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $CMBinariesDirectory)
 }
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd
@@ -53,13 +53,13 @@ Write-ScreenInfo -Message "Activity done" -TaskEnd
 
 #region
 Write-ScreenInfo -Message "Downloading CM prerequisites" -TaskStart
-if (-not (Test-Path -Path $SccmPreReqsDirectory))
+if (-not (Test-Path -Path $CMPreReqsDirectory))
 {
     try {
-        $p = Start-Process -FilePath $SccmBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList "/NOUI", $SccmPreReqsDirectory -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
+        $p = Start-Process -FilePath $CMBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList "/NOUI", $CMPreReqsDirectory -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
     }
     catch {
-        $Message = "Failed to initiate download of CM pre-req files to '{0}' ({1})" -f $SccmPreReqsDirectory, $StartProcessErr.ErrorRecord.Exception.Message
+        $Message = "Failed to initiate download of CM pre-req files to '{0}' ({1})" -f $CMPreReqsDirectory, $StartProcessErr.ErrorRecord.Exception.Message
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $Message
     }
@@ -72,7 +72,7 @@ if (-not (Test-Path -Path $SccmPreReqsDirectory))
 }
 else
 {
-    Write-ScreenInfo -Message ("CM prerequisites folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $SccmPreReqsDirectory)
+    Write-ScreenInfo -Message ("CM prerequisites folder already exists, skipping the download. Delete the folder '{0}' if you want to download again." -f $CMPreReqsDirectory)
 }
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd

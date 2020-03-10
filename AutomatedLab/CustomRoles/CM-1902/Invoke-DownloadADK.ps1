@@ -1,4 +1,4 @@
-param(
+Param (
     [Parameter(Mandatory)]
     [string]$AdkDownloadPath,
 

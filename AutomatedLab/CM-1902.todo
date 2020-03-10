@@ -34,7 +34,9 @@ CM-1902:
         ✔ Add Endpoint Protection point @low @done (13/01/2020, 22:07:42)
         ✔ Add Reportig Services point @high @done (13/01/2020, 22:07:43)
         ✔ Add SQL native client @high @done (10/01/2020, 22:42:22)
-        ☐ Remove "SCCM" references @low
+        ✔ Remove "SCCM" references @low @done (17/01/2020, 18:22:04)
         ✔ Configure SQL to allow remote connection HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\INSTANCEGOESHERE\MSSQLServer\SuperSocketNetLib\Tcp\IP2 @done (10/01/2020, 22:42:18)
         ✔ Set DATA and LOG directories for SQL install or come up with some way that puts SUSDB on F:\ @high @done (12/01/2020, 18:58:21)
         ✔ I wonder if WSUS still installs w/o that registry nonsense of "enabling" TCP/IP for SQL @done (13/01/2020, 22:07:48)
+        ☐ Let user specify own SQL Server 2017
+        ☐ Auto download SQL Server 2017 if user not given ISO
