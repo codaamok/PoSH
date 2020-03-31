@@ -5,7 +5,7 @@ Function prompt {
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
     if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
-        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, $(hostname), (Get-Date -Format "HH:mm:ss")) -NoNewline
+        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, [System.Net.Dns]::GetHostName(), (Get-Date -Format "HH:mm:ss")) -NoNewline
         Write-Host $executionContext.SessionState.Path.CurrentLocation -ForegroundColor "Green"
         Write-Output "$('>' * ($nestedPromptLevel + 1)) "
         #Write-Host "[$env:USER@$Hostname] " -NoNewline
@@ -38,6 +38,10 @@ Function prompt {
         Write-Output "$('>' * ($nestedPromptLevel + 1)) "
         Write-Host "" 
     }
+}
+
+Function Get-HostName {
+
 }
 
 Function Reset-CMClientPolicy {
@@ -2088,6 +2092,123 @@ Function New-ModuleDirStructure {
     New-ModuleManifest @NewModuleManifestSplat
 
     # Copy the public/exported functions into the public folder, private functions into private folder
+}
+
+function Get-RemotePSSession{
+    <#
+    .Synopsis
+        Display WSMan Connection Info
+    .DESCRIPTION
+        This is a wrapper to Get-WSManInstance
+    .EXAMPLE
+        Get-RemotePSSession ServerABC
+    .EXAMPLE
+        $s = Get-RemotePSSession ServerABC
+        $s | Remove-RemotePSSession
+    .NOTES
+        https://jrich523.wordpress.com/2012/01/19/managing-remote-wsman-sessions-with-powershell/
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true,
+                   ValueFromPipeline=$true,
+                   Position=0)]
+        [string]$ComputerName,
+        [Parameter()]
+        [switch]$UseSSL,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    begin
+    {
+        try{
+            Add-Type  @"
+namespace JRICH{
+public class PSSessionInfo
+            {
+                public string Owner;
+public string ClientIP;
+public string SessionTime;
+public string IdleTime;
+public string ShellID;
+public string ConnectionURI;
+public bool UseSSL=false;
+            }}
+"@
+        }
+        catch{}
+        $results = @()
+ 
+    }
+    process {
+        $port = if($usessl){5986}else{5985}
+        $URI = "http://{0}:{1}/wsman" -f $ComputerName, $port
+
+        $GetWSManInstanceSplat = @{
+            ConnectionURI = $URI
+            ResourceURI = "shell"
+            Enumerate = $true
+        }
+        
+        if ($PSBoundParameters.ContainsKey("Credential")) {
+            $GetWSManInstanceSplat["Credential"] = $Credential
+        }
+        
+        $sessions = Get-WSManInstance @GetWSManInstanceSplat
+ 
+        foreach($session in $sessions) {
+            $obj = New-Object jrich.pssessioninfo
+            $obj.owner = $session.owner
+            $obj.clientip = $session.clientIp
+            $obj.sessiontime = [System.Xml.XmlConvert]::ToTimeSpan($session.shellRunTime).tostring()
+            $obj.idletime = [System.Xml.XmlConvert]::ToTimeSpan($session.shellInactivity).tostring()
+            $obj.shellid = $session.shellid
+            $obj.connectionuri = $uri
+            $obj.UseSSL = $usessl
+            $results += $obj
+        }
+    }
+    end
+    {
+        $results
+    }
+}
+
+function Remove-RemotePSSession {
+    <#
+    .Synopsis
+        Logoff remote WSMAN session
+    .DESCRIPTION
+        This function will take a JRICH.PSSessionInfo object and disconnect it
+    .EXAMPLE
+        $s = Get-RemotePSSession ServerABC
+        $s | Remove-RemotePSSession
+    .NOTES
+        https://jrich523.wordpress.com/2012/01/19/managing-remote-wsman-sessions-with-powershell/
+    #>
+    [CmdletBinding()]
+    param (
+        # Session to be removed.
+        [Parameter(Mandatory=$true,
+                   ValueFromPipeline=$true,
+                   Position=0)]
+        [jrich.pssessioninfo[]]$Session,
+        [Parameter()]
+        [PSCredential]$Credential
+    )
+    process {
+        foreach($connection in $session) {
+            $RemoveWSManInstanceSplat = @{
+                ConnectionURI = $connection.connectionuri
+                ResourceURI = "shell"
+                SelectorSet = @{ShellID=$connection.shellid}
+            }
+            if ($PSBoundParameters.ContainsKey("Credential")) {
+                $RemoveWSManInstanceSplat["Credential"] = $Credential
+            }
+            Remove-WSManInstance @RemoveWSManInstanceSplat
+        }
+    }
 }
 
 function ConvertTo-HexString {
