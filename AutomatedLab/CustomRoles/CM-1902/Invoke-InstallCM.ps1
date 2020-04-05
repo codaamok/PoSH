@@ -750,7 +750,7 @@ UseProxy=0
 }
 #endregion
 
-Import-Lab -Name $data.Name -NoValidation -NoDisplay -PassThru
+#Import-Lab -Name $data.Name -NoValidation -NoDisplay -PassThru
 
 $InstallCMSiteSplat = @{
     CMServerName          = $ComputerName

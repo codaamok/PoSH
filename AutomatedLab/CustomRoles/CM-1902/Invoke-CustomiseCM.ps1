@@ -215,7 +215,7 @@ function Set-CMCustomisations {
 }
 #endregion
 
-Import-Lab -Name $data.Name -NoValidation -NoDisplay -PassThru
+#Import-Lab -Name $data.Name -NoValidation -NoDisplay -PassThru
 
 Write-ScreenInfo -Message "Applying customisations" -TaskStart
 Set-CMCustomisations -CMServerName $ComputerName -LogViewer $LogViewer
