@@ -759,9 +759,9 @@ $InstallCMSiteSplat = @{
     CMSiteCode            = $CMSiteCode
     CMSiteName            = $CMSiteName
     CMProductId           = $CMProductId
-    SqlServerName           = $SqlServerName
-    AdminUser               = $AdminUser
-    AdminPass               = $AdminPass
+    SqlServerName         = $SqlServerName
+    AdminUser             = $AdminUser
+    AdminPass             = $AdminPass
 }
 
 Write-ScreenInfo -Message "Starting site install process" -TaskStart

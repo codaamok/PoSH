@@ -37,7 +37,7 @@
                 - LogViewer: "OneTrace"
                 - Site system roles: MP, DP, SUP (inc WSUS), RSP, EP
 
-    The following customsations are applied to the ConfigMgr server post install:
+    The following customisations are applied to the ConfigMgr server post install:
         - The ConfigMgr console is updated
         - Shortcuts on desktop:
             - Console
@@ -54,7 +54,7 @@
     
     This is useful if you want the opportunity the snapshot/checkpoint the laptop VMs before installing Configuration Manager on CM01.
 
-    See the next example on how to trigger the remainder of the isntall tasks.
+    See the next example on how to trigger the remainder of the install tasks.
 
 .EXAMPLE
     PS C:\> .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
@@ -70,7 +70,7 @@
     The Active Directory domain for this lab.
     If the domain resolves to an IP address, a terminating error is thrown. Use the -SkipDomainCheck switch to continue even if the domain resolves to an IP address.
 .PARAMETER AdminUser
-    The username of a Domain Administratior within your lab. Also the account used for installing Active Directory and other software packages in this lab.
+    The username of a Domain Administrator within your lab. Also the account used for installing Active Directory and other software packages in this lab.
 .PARAMETER AdminPass
     The password for the AdminUser.
 .PARAMETER AddressSpace
