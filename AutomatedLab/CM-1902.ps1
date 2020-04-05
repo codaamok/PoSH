@@ -44,7 +44,6 @@
             - Logs directory
             - Tools directory
             - Support Center
-
 .EXAMPLE
     PS C:\> .\CM-1902.ps1 -ExcludePostInstallations
 
@@ -55,12 +54,10 @@
     This is useful if you want the opportunity the snapshot/checkpoint the laptop VMs before installing Configuration Manager on CM01.
 
     See the next example on how to trigger the remainder of the install tasks.
-
 .EXAMPLE
     PS C:\> .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
 
     Following on from the previous example, this executes the post installation tasks which is to execute the CustomRole CM-1902 scripts on CM01.
-
 .PARAMETER LabName
     The name of the AutomatedLab lab created by this script.
 .PARAMETER VMPath
@@ -470,12 +467,12 @@ else {
     $CMRole = Get-LabPostInstallationActivity -CustomRole "CM-1902" -Properties @{
         CMSiteCode              = $SiteCode
         CMSiteName              = $SiteName
-        CMBinariesDirectory     = "$labSources\SoftwarePackages\CM1902"
-        CMPreReqsDirectory      = "$labSources\SoftwarePackages\CMPreReqs"
+        CMBinariesDirectory     = "{0}\SoftwarePackages\CM1902" -f $labSources
+        CMPreReqsDirectory      = "{0}\SoftwarePackages\CMPreReqs" -f $labSources
         CMProductId             = "Eval" # Can be "Eval" or a product key
         Version                 = $CMVersion
-        AdkDownloadPath         = "$labSources\SoftwarePackages\ADK"
-        WinPEDownloadPath       = "$labSources\SoftwarePackages\WinPE"
+        AdkDownloadPath         = "{0}\SoftwarePackages\ADK" -f $labSources
+        WinPEDownloadPath       = "{0}\SoftwarePackages\WinPE" -f $labSources
         LogViewer               = $LogViewer
         SqlServerName           = $CMHostname
         DoNotDownloadWMIEv2     = $DoNotDownloadWMIEv2.IsPresent.ToString()
