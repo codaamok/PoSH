@@ -457,11 +457,14 @@ $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{
     Collation = "SQL_Latin1_General_CP1_CI_AS"
 }
 
-Add-LabDiskDefinition -Name ("{0}-DATA-01" -f $CMHostname) -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
-Add-LabDiskDefinition -Name ("{0}-SQL-01" -f $CMHostname) -DiskSizeInGb 30 -Label "SQL01" -DriveLetter "F"
+$DataDisk = "{0}-DATA-01" -f $CMHostname
+$SQLDisk = "{0}-SQL-01" -f $CMHostname
+
+Add-LabDiskDefinition -Name $DataDisk -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
+Add-LabDiskDefinition -Name $SQLDisk -DiskSizeInGb 30 -Label "SQL01" -DriveLetter "F"
 
 if ($ExcludePostInstallations.IsPresent) {
-    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MaxMemory $CMMemory -DiskName "CM01-DATA-01","CM01-SQL-01"
+    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MaxMemory $CMMemory -DiskName $DataDisk, $SQLDisk
 }
 else {
     $CMRole = Get-LabPostInstallationActivity -CustomRole "CM-1902" -Properties @{
@@ -479,7 +482,7 @@ else {
         AdminUser               = $AdminUser
         AdminPass               = $AdminPass
     }
-    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -DiskName "CM01-DATA-01","CM01-SQL-01" -PostInstallationActivity $CMRole
+    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -DiskName $DataDisk, $SQLDisk -PostInstallationActivity $CMRole
 }
 #endregion
 
