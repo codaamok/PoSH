@@ -300,6 +300,9 @@ if ($AutoLogon.IsPresent) {
     $PSDefaultParameterValues['Add-LabMachineDefinition:AutoLogonPassword']   = $AdminPass
 }
 
+$DataDisk = "{0}-DATA-01" -f $CMHostname
+$SQLDisk = "{0}-SQL-01" -f $CMHostname
+
 $SQLConfigurationFile = Join-Path -Path $labSources -ChildPath "CustomRoles\CM-1902\ConfigurationFile-SQL.ini"
 #endregion
 
@@ -456,9 +459,6 @@ $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{
     ConfigurationFile = [String]$SQLConfigurationFile
     Collation = "SQL_Latin1_General_CP1_CI_AS"
 }
-
-$DataDisk = "{0}-DATA-01" -f $CMHostname
-$SQLDisk = "{0}-SQL-01" -f $CMHostname
 
 Add-LabDiskDefinition -Name $DataDisk -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
 Add-LabDiskDefinition -Name $SQLDisk -DiskSizeInGb 30 -Label "SQL01" -DriveLetter "F"
