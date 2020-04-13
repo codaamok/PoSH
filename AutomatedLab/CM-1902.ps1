@@ -235,7 +235,7 @@ Param (
             throw "File '$_' does not exist or is not of type '.iso'"
         }
         elseif (!$_.StartsWith($labSources)) {
-            throw "Please move SQL ISO to your Lab Sources folder '$labSources'"
+            throw "Please move SQL ISO to your Lab Sources folder '$labSources\ISOs'"
         }
         return $true
     })]
