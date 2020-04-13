@@ -3,61 +3,6 @@
     An AutomatedLab script for Configuration Manager 1902 with support for installing updates.
 .DESCRIPTION
     An AutomatedLab script for Configuration Manager 1902 with support for installing updates.
-.EXAMPLE
-    PS C:\> .\CM-1902.ps1 
-
-    Builds a lab with the following properties:
-        - 1x AutomatedLab:
-            - Name: "CMLab01"
-            - VMPath: \<drive\>:\AutomatedLab-VMs where \<drive\> is the fastest drive available
-        - 1x Active Directory domain:
-            - Domain: "winadmins.lab"
-            - Username: "Administrator"
-            - Password: "Somepass1"
-            - AddressSpace: An unused and available subnet increasing 192.168.1.0 by 1 until one is found.
-            - ExternalVMSwitch: Allows physical network access via Hyper-V external switch named "Internet".
-        - 2x virtual machines:
-            - Operating System: Windows Server 2019 (Desktop Experience)
-            - 1x Domain Controller:
-                - Name: "DC01"
-                - vCPU: 2
-                - Max memory: 2GB
-                - Disks: 1 x 100GB (OS, dynamic)
-                - Roles: "RootDC", "Routing"
-            - 1x Configuration Manager primary site server:
-                - Name: "CM01"
-                - vCPU: 4
-                - Max memory: 8GB
-                - Disks: 1 x 100GB (OS, dynamic), 1x 30GB (SQL, dynamic), 1x 50GB (DATA, dynamic)
-                - Roles: "SQLServer2017"
-                - CustomRoles: "CM-1902"
-                - SiteCode: "P01"
-                - SiteName: "CMLab01"
-                - Version: "Latest"
-                - LogViewer: "OneTrace"
-                - Site system roles: MP, DP, SUP (inc WSUS), RSP, EP
-
-    The following customisations are applied to the ConfigMgr server post install:
-        - The ConfigMgr console is updated
-        - Shortcuts on desktop:
-            - Console
-            - Logs directory
-            - Tools directory
-            - Support Center
-.EXAMPLE
-    PS C:\> .\CM-1902.ps1 -ExcludePostInstallations
-
-    Builds a lab with the the same properties as the first example, with the exception that it does not install Configuration Manager. 
-    
-    In other words, the VMs DC01 and CM01 will be created, Windows installed, AD installed on DC01 and SQL installed on CM01 and that's it.
-    
-    This is useful if you want the opportunity the snapshot/checkpoint the laptop VMs before installing Configuration Manager on CM01.
-
-    See the next example on how to trigger the remainder of the install tasks.
-.EXAMPLE
-    PS C:\> .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
-
-    Following on from the previous example, this executes the post installation tasks which is to execute the CustomRole CM-1902 scripts on CM01.
 .PARAMETER LabName
     The name of the AutomatedLab lab created by this script.
 .PARAMETER VMPath
@@ -134,6 +79,61 @@
     You cannot use this parameter with -ExternalVMSwitchName.
 .PARAMETER AutoLogon
     Specify this to enable auto logon for all VMs in this lab.
+.EXAMPLE
+    PS C:\> .\CM-1902.ps1 
+
+    Builds a lab with the following properties:
+        - 1x AutomatedLab:
+            - Name: "CMLab01"
+            - VMPath: \<drive\>:\AutomatedLab-VMs where \<drive\> is the fastest drive available
+        - 1x Active Directory domain:
+            - Domain: "winadmins.lab"
+            - Username: "Administrator"
+            - Password: "Somepass1"
+            - AddressSpace: An unused and available subnet increasing 192.168.1.0 by 1 until one is found.
+            - ExternalVMSwitch: Allows physical network access via Hyper-V external switch named "Internet".
+        - 2x virtual machines:
+            - Operating System: Windows Server 2019 (Desktop Experience)
+            - 1x Domain Controller:
+                - Name: "DC01"
+                - vCPU: 2
+                - Max memory: 2GB
+                - Disks: 1 x 100GB (OS, dynamic)
+                - Roles: "RootDC", "Routing"
+            - 1x Configuration Manager primary site server:
+                - Name: "CM01"
+                - vCPU: 4
+                - Max memory: 8GB
+                - Disks: 1 x 100GB (OS, dynamic), 1x 30GB (SQL, dynamic), 1x 50GB (DATA, dynamic)
+                - Roles: "SQLServer2017"
+                - CustomRoles: "CM-1902"
+                - SiteCode: "P01"
+                - SiteName: "CMLab01"
+                - Version: "Latest"
+                - LogViewer: "OneTrace"
+                - Site system roles: MP, DP, SUP (inc WSUS), RSP, EP
+
+    The following customisations are applied to the ConfigMgr server post install:
+        - The ConfigMgr console is updated
+        - Shortcuts on desktop:
+            - Console
+            - Logs directory
+            - Tools directory
+            - Support Center
+.EXAMPLE
+    PS C:\> .\CM-1902.ps1 -ExcludePostInstallations
+
+    Builds a lab with the the same properties as the first example, with the exception that it does not install Configuration Manager. 
+    
+    In other words, the VMs DC01 and CM01 will be created, Windows installed, AD installed on DC01 and SQL installed on CM01 and that's it.
+    
+    This is useful if you want the opportunity the snapshot/checkpoint the laptop VMs before installing Configuration Manager on CM01.
+
+    See the next example on how to trigger the remainder of the install tasks.
+.EXAMPLE
+    PS C:\> .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+    Following on from the previous example, this executes the post installation tasks which is to execute the CustomRole CM-1902 scripts on CM01.
 .NOTES
     Author:       Adam Cook (@codaamok)
     Date created: 2019-01-05
@@ -320,7 +320,7 @@ switch ($true) {
         }
     }
     (-not $SkipHostnameCheck.IsPresent) {
-        ForEach ($Hostname in @($DCHostname,$CMHostname)) {
+        foreach ($Hostname in @($DCHostname,$CMHostname)) {
             try {
                 [System.Net.Dns]::Resolve($Hostname) | Out-Null
                 throw ("Host '{0}' resolves, choose a different hostname" -f $Hostname)
@@ -386,7 +386,7 @@ if (!$PSBoundParameters.ContainsKey("SQLServer2017ISO")) {
             Write-ScreenInfo -Message "Downloading the ISO" -TaskStart
             $pArgs = @(
                 "/c"
-                "{0}" -f $SQLServer2017EXE
+                $SQLServer2017EXE
                 "/ACTION=Download"
                 "/MEDIATYPE=ISO"
                 "/MEDIAPATH=`"{0}`"" -f (Split-Path $SQLServer2017ISO -Parent)
