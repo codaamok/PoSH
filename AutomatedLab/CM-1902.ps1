@@ -457,8 +457,8 @@ $sqlRole = Get-LabMachineRoleDefinition -Role SQLServer2017 -Properties @{
     Collation = "SQL_Latin1_General_CP1_CI_AS"
 }
 
-Add-LabDiskDefinition -Name "CM01-DATA-01" -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
-Add-LabDiskDefinition -Name "CM01-SQL-01" -DiskSizeInGb 30 -Label "SQL01" -DriveLetter "F"
+Add-LabDiskDefinition -Name ("{0}-DATA-01" -f $CMHostname) -DiskSizeInGb 50 -Label "DATA01" -DriveLetter "G"
+Add-LabDiskDefinition -Name ("{0}-SQL-01" -f $CMHostname) -DiskSizeInGb 30 -Label "SQL01" -DriveLetter "F"
 
 if ($ExcludePostInstallations.IsPresent) {
     Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MaxMemory $CMMemory -DiskName "CM01-DATA-01","CM01-SQL-01"
