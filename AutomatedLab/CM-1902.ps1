@@ -361,48 +361,23 @@ Set-LabInstallationCredential -Username $AdminUser -Password $AdminPass
 if (!$PSBoundParameters.ContainsKey("SQLServer2017ISO")) {
     Write-ScreenInfo -Message "Downloading SQL Server 2017 Evaluation" -TaskStart
 
-    $URL = "https://download.microsoft.com/download/5/2/2/522EE642-941E-47A6-8431-57F0C2694EDF/SQLServer2017-SSEI-Eval.exe"
-    $SQLServer2017EXE = Join-Path -Path $labSources -ChildPath "SoftwarePackages\SQLServer2017-SSEI-Eval.exe"
+    $URL = "https://download.microsoft.com/download/E/F/2/EF23C21D-7860-4F05-88CE-39AA114B014B/SQLServer2017-x64-ENU.iso"
     $SQLServer2017ISO = Join-Path -Path $labSources -ChildPath "ISOs\SQLServer2017-x64-ENU.iso"
 
     if (Test-Path $SQLServer2017ISO) {
         Write-ScreenInfo -Message ("SQL Server 2017 Evaluation ISO already exists, delete '{0}' if you want to download again" -f $SQLServer2017ISO)
     }
-    elseif (Test-Path $SQLServer2017EXE) {
-        Write-ScreenInfo -Message ("SQL Server 2017 Evaluation downloader binary already exists, delete '{0}' if you want to download again" -f $SQLServer2017EXE)
-    }
     else {
         try {
-            Write-ScreenInfo -Message "Downloading the downloader" -TaskStart
-            Get-LabInternetFile -Uri $URL -Path (Split-Path $SQLServer2017EXE -Parent) -FileName (Split-Path $SQLServer2017EXE -Leaf) -ErrorAction "Stop"
+            Write-ScreenInfo -Message "Downloading SQL Server 2017 ISO" -TaskStart
+            Get-LabInternetFile -Uri $URL -Path (Split-Path $SQLServer2017ISO -Parent) -FileName (Split-Path $SQLServer2017ISO -Leaf) -ErrorAction "Stop"
             Write-ScreenInfo -Message "Done" -TaskEnd
         }
         catch {
-            $Message = "Failed to download SQL Server 2017 downloader binary ({0})" -f $_.Exception.Message
+            $Message = "Failed to download SQL Server 2017 ISO ({0})" -f $_.Exception.Message
             Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
             throw $Message
         }
-    }
-
-    if (-not (Test-Path $SQLServer2017ISO)) {
-        try {
-            Write-ScreenInfo -Message "Downloading the ISO" -TaskStart
-            $pArgs = @(
-                "/c"
-                $SQLServer2017EXE
-                "/ACTION=Download"
-                "/MEDIATYPE=ISO"
-                "/MEDIAPATH=`"{0}`"" -f (Split-Path $SQLServer2017ISO -Parent)
-                "/QUIET"
-            )
-            Start-Process -FilePath cmd.exe -ArgumentList $pArgs -Wait -ErrorAction "Stop"
-        }
-        catch {
-            $Message = "Failed to initiate download of SQL Server 2017 ISO using the downloader ({0})" -f $_.Exception.Message
-            Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-            throw $Message
-        }
-
         if (-not (Test-Path $SQLServer2017ISO)) {
             $Message = "Could not find SQL Server 2017 ISO '{0}' after download supposedly complete" -f $SQLServer2017ISO
             Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
