@@ -400,7 +400,7 @@ if ($NoInternetAccess.IsPresent -And $CMVersion -ne "1902") {
 
 #region Forcing log viewer to be CMTrace if $CMVersion -eq 1902
 if ($CMVersion -eq 1902 -and $LogViewer -eq "OneTrace") {
-    Write-ScreenInfo -Message "Setting LogViewer to 'CMTrace' as OneTrace is only availale in 1906 or newer" -Type "Warning"
+    Write-ScreenInfo -Message "Setting LogViewer to 'CMTrace' as OneTrace is only available in 1906 or newer" -Type "Warning"
     $LogViewer = "CMTrace"
 }
 #endregion
@@ -422,8 +422,8 @@ Add-LabVirtualNetworkDefinition @AddLabVirtualNetworkDefinitionSplat
 $netAdapter += New-LabNetworkAdapterDefinition @NewLabNetworkAdapterDefinitionSplat
 
 if (-not $NoInternetAccess.IsPresent) {
-    Add-LabVirtualNetworkDefinition -Name "Internet" -VirtualizationEngine "HyperV" -HyperVProperties @{ SwitchType = 'External'; AdapterName = 'Internet' }
-    $netAdapter += New-LabNetworkAdapterDefinition -VirtualSwitch "Internet" -UseDhcp
+    Add-LabVirtualNetworkDefinition -Name $ExternalVMSwitchName -VirtualizationEngine "HyperV" -HyperVProperties @{ SwitchType = 'External'; AdapterName = $ExternalVMSwitchName }
+    $netAdapter += New-LabNetworkAdapterDefinition -VirtualSwitch $ExternalVMSwitchName -UseDhcp
 }
 
 Add-LabMachineDefinition -Name $DCHostname -Processors $DCCPU -Roles RootDC,Routing -NetworkAdapter $netAdapter -MaxMemory $DCMemory
