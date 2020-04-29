@@ -2343,16 +2343,6 @@ function Update-RoyalTSPortable {
         [ValidateNotNullOrEmpty()]
         [String]$Path = "{0}\RoyalTS" -f [Environment]::GetFolderPath("MyDocuments")
     )
-    
-    Function Unzip {
-        Param(
-            [string]$zipfile, 
-            [string]$outpath
-        )
-        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
-    }
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
 
     if (-not (Test-Path $Path)) {
         Write-Warning ("Path '{0}' does not exist" -f $Path)
@@ -2394,7 +2384,7 @@ function Update-RoyalTSPortable {
         Stop-Process -Name "RoyalTS" -ErrorAction "Stop"
     }
 
-    Unzip -zipfile $File -outpath $Path
+    Expand-Archive -Path $File -Path $Path -Force
 
     Remove-Item -Path $File
 }
