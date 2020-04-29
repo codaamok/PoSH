@@ -2368,7 +2368,7 @@ function Update-RoyalTSPortable {
         (New-Object System.Net.WebClient).DownloadFile($URL, $File)
     }
 
-    if (Get-Process -Name "RoyalTS") {
+    if (Get-Process -Name "RoyalTS" -ErrorAction "SilentlyContinue") {
         Write-Warning "RoyalTS is running"
         $Y = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Stop RoyalTS process"
         $N = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Do not stop RoyalTS process"
