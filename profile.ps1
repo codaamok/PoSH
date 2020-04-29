@@ -2384,7 +2384,7 @@ function Update-RoyalTSPortable {
         Stop-Process -Name "RoyalTS" -ErrorAction "Stop"
     }
 
-    Expand-Archive -Path $File -Path $Path -Force
+    Expand-Archive -Path $File -DestinationPath $Path -Force
 
     Remove-Item -Path $File
 }
