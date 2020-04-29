@@ -138,6 +138,7 @@
     Author:       Adam Cook (@codaamok)
     Date created: 2019-01-05
     Source:       https://github.com/codaamok/PoSH/AutomatedLab
+    TODO: Convert throw to ThrowTerminatingError() method
 #>
 #Requires -Version 5.1 -Modules "AutomatedLab", "Hyper-V"
 [Cmdletbinding()]
@@ -340,10 +341,10 @@ switch ($true) {
     ($NoInternetAccess.IsPresent -And $PSBoundParameters.ContainsKey("ExternalVMSwitchName")) {
         throw "Can not use -NoInternetAccess and -ExternalVMSwitchName together"
     }
-    ((Get-VMSwitch).Name -notcontains $ExternalVMSwitchName) { 
+    ((-not $NoInternetAccess.IsPresent) -And (Get-VMSwitch).Name -notcontains $ExternalVMSwitchName) { 
         throw ("Hyper-V virtual switch '{0}' does not exist" -f $ExternalVMSwitchName)
     }
-    ((Get-VMSwitch -Name $ExternalVMSwitchName).SwitchType -ne "External") { 
+    ((-not $NoInternetAccess.IsPresent) -And (Get-VMSwitch -Name $ExternalVMSwitchName).SwitchType -ne "External") { 
         throw ("Hyper-V virtual switch '{0}' is not of External type" -f $ExternalVMSwitchName)
     }
     (-not(Test-Path $SQLConfigurationFile)) {
@@ -407,26 +408,32 @@ if ($CMVersion -eq 1902 -and $LogViewer -eq "OneTrace") {
 
 #region Build AutomatedLab
 $netAdapter = @()
+$Roles = @("RootDC")
+
 $AddLabVirtualNetworkDefinitionSplat = @{
     Name                   = $LabName
     VirtualizationEngine   = "HyperV"
 }
+
 $NewLabNetworkAdapterDefinitionSplat = @{
     VirtualSwitch = $LabName
 }
+
 if ($PSBoundParameters.ContainsKey("AddressSpace")) {
     $AddLabVirtualNetworkDefinitionSplat.Add("AddressSpace", $AddressSpace)
     $NewLabNetworkAdapterDefinitionSplat.Add("Ipv4Address", $AddressSpace)
 }
+
 Add-LabVirtualNetworkDefinition @AddLabVirtualNetworkDefinitionSplat
 $netAdapter += New-LabNetworkAdapterDefinition @NewLabNetworkAdapterDefinitionSplat
 
 if (-not $NoInternetAccess.IsPresent) {
     Add-LabVirtualNetworkDefinition -Name $ExternalVMSwitchName -VirtualizationEngine "HyperV" -HyperVProperties @{ SwitchType = 'External'; AdapterName = $ExternalVMSwitchName }
     $netAdapter += New-LabNetworkAdapterDefinition -VirtualSwitch $ExternalVMSwitchName -UseDhcp
+    $Roles += "Routing"
 }
 
-Add-LabMachineDefinition -Name $DCHostname -Processors $DCCPU -Roles RootDC,Routing -NetworkAdapter $netAdapter -MaxMemory $DCMemory
+Add-LabMachineDefinition -Name $DCHostname -Processors $DCCPU -Roles $Roles -NetworkAdapter $netAdapter -MaxMemory $DCMemory
 
 Add-LabIsoImageDefinition -Name SQLServer2017 -Path $SQLServer2017ISO
 
@@ -457,7 +464,7 @@ else {
         AdminUser               = $AdminUser
         AdminPass               = $AdminPass
     }
-    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MinMemory 2GB -MaxMemory 8GB -Memory 4GB -DiskName $DataDisk, $SQLDisk -PostInstallationActivity $CMRole
+    Add-LabMachineDefinition -Name $CMHostname -Processors $CMCPU -Roles $sqlRole -MaxMemory $CMMemory -DiskName $DataDisk, $SQLDisk -PostInstallationActivity $CMRole
 }
 #endregion
 

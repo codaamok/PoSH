@@ -9,9 +9,10 @@ if ($ExcludePostInstall.IsPresent -and $PostInstallOnly.IsPresent) {
     throw
 }
 
-if (-not($DoNotCopyFiles.IsPresent)) {
+if (-not $DoNotCopyFiles.IsPresent) {
+    $Source = "{0}\CustomRoles\CM-1902\*" -f $PSScriptRoot
     $Destination = "{0}\CustomRoles\CM-1902\" -f $global:labSources
-    Copy-Item -Path ".\CustomRoles\CM-1902\*" -Destination $Destination -Recurse -Force -ErrorAction "Stop"
+    Copy-Item -Path $Source -Destination $Destination -Recurse -Force -ErrorAction "Stop"
 }
 
 if ($ExcludePostInstall.IsPresent) {
@@ -21,5 +22,5 @@ elseif ($PostInstallOnly.IsPresent) {
     .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
 }
 else {
-    .\CM-1902.ps1 -AutoLogon
+    .\CM-1902.ps1 -AutoLogon -ExternalVMSwitchName "Internet2"
 }
