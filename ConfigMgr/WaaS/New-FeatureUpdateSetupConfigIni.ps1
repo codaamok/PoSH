@@ -12,8 +12,8 @@ param (
     [Parameter()]
     [System.Collections.Specialized.OrderedDictionary]$AddSettings = [ordered]@{
         "SetupConfig" = [ordered]@{
-            "BitLocker"             = "AlwaysSuspend";
-            "Compat"                = "IgnoreWarning";
+            "BitLocker"             = "AlwaysSuspend"
+            "Compat"                = "IgnoreWarning"
             "Priority"              = "Normal"
             "DynamicUpdate"         = "Enable"
             "ShowOOBE"              = "None"
