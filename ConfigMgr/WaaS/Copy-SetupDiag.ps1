@@ -18,4 +18,4 @@ if (-not(Test-Path $FeatureUpdateTemp)) {
     $Folder.Attributes = $Folder.Attributes -bor "Hidden"
 }
 
-Copy-Item -Path .\SetupDiag.exe -Destination $FeatureUpdateTemp -Force -ErrorAction "Stop"
+Copy-Item -Path .\SetupDiag.exe -Destination $FeatureUpdateTemp\SetupDiag.exe -Force -ErrorAction "Stop"

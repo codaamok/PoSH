@@ -230,7 +230,8 @@ function Set-IniContent {
     catch {
         $ReturnValue = $error[0]
     }
-        $ReturnValue
+    
+    $ReturnValue
 }
 
 function Export-IniFile {
