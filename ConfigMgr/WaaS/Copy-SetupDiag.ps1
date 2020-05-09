@@ -9,9 +9,8 @@ param (
     [String]$FeatureUpdateTemp = "C:\~AdamCookFeatureUpdateTemp"
 )
 
-if (-not(Test-Path $CustomActionScriptsFolder)) {
+if (-not(Test-Path $FeatureUpdateTemp)) {
     $null = New-Item -Path @(
-        $CustomActionScriptsFolder
         "{0}\Scripts" -f $FeatureUpdateTemp
         "{0}\Logs" -f $FeatureUpdateTemp
     ) -ItemType "Directory" -Force -ErrorAction "Stop"
