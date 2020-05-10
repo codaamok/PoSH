@@ -3,6 +3,7 @@
     Add or remove key/value pairs to SetupConfig.ini for Windows 10 feature updates.
     Use in a ConfigMgr CI.
 .NOTES
+    Author: Adam Cook (@codaamok)
     A heavily modified version of https://github.com/AdamGrossTX/Windows10FeatureUpdates/blob/master/Admin/ComplianceScripts/FeatureUpdateCIScript.ps1
 #>
 [CmdletBinding()]
@@ -118,8 +119,7 @@ function Get-IniContent {
             }
             # Comment  
             "^(;.*)$" {  
-                if (!($section))  
-                {  
+                if (-not $section) {  
                     $section = "No-Section"  
                     $ini[$section] = [ordered]@{}  
                 }  
@@ -132,8 +132,7 @@ function Get-IniContent {
             # Key/Value Pair
             "(.+?)\s*=\s*(.*)"  
             {  
-                if (!($section))  
-                {  
+                if (-not $section) {  
                     $section = "No-Section"  
                     $ini[$section] = @{}  
                 }  
@@ -209,7 +208,7 @@ function Export-IniFile {
         [System.Collections.Specialized.OrderedDictionary]$Content,
 
         [Parameter()]
-        [String]$NewFile
+        [String]$File
     )
 
     try {
@@ -220,7 +219,7 @@ function Export-IniFile {
         }
 
         #Write $Content to the SetupConfig.ini file
-        $NewContent | Set-Content -Path $NewFile -Force -ErrorAction "Stop"
+        $NewContent | Set-Content -Path $File -Force -ErrorAction "Stop"
     }
     catch {
         $PSCmdlet.ThrowTerminatingError($_)
@@ -248,7 +247,7 @@ try {
             $DestIniFile = $SourceIniFile
         }
 
-        Export-IniFile -Content $NewIniDictionary["SetupConfig"] -NewFile $DestIniFile
+        Export-IniFile -Content $NewIniDictionary["SetupConfig"] -File $DestIniFile
 
         $ComplianceValue = $NewIniDictionary["Compliance"]
     }

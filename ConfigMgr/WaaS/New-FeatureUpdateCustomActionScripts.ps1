@@ -2,6 +2,8 @@
 .SYNOPSIS
     Generate custom action scripts for Windows 10 Feature Updates.
     Use in a ConfigMgr CI.
+.NOTES
+    Author: Adam Cook (@codaamok)
 #>
 [CmdletBinding()]
 param (

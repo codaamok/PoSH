@@ -2,6 +2,8 @@
 .SYNOPSIS
     Copy SetupDiag.exe to somewhere on disk.
     Use in a ConfigMgr application.
+.NOTES
+    Author: Adam Cook (@codaamok)
 #>
 [CmdletBinding()]
 param (
