@@ -150,7 +150,7 @@ function Get-IniContent {
         $ini
     }
     catch {
-        Write-Error -ErrorRecord $_ -ErrorAction "Stop"
+        $PSCmdlet.ThrowTerminatingError($_)
     }
 }
 
@@ -164,12 +164,13 @@ function Set-IniContent {
         [System.Collections.Specialized.OrderedDictionary]$DesiredConfig
     )
 
+    $Config = [ordered]@{
+        "SetupConfig" = [ordered]@{}
+        "Compliance"  = "Compliant"
+    }
+
     try {
         $CompareResult = Compare-Hashtable -Left $CurrentConfig.SetupConfig -Right $DesiredConfig.SetupConfig
-        
-        $Config = [ordered]@{
-            "SetupConfig" = [ordered]@{}
-        }
 
         foreach ($Result in $CompareResult) {
             switch ($Result.Side) {
@@ -183,10 +184,12 @@ function Set-IniContent {
                 }
                 "=>" {
                     # Exists in desired, but not current, so insert
+                    $Config["Compliant"] = $false
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
                 "!=" {
                     # Exists in both, but current value doesn't match desired, so correct
+                    $Config["Compliant"] = $false
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
             }
@@ -195,7 +198,7 @@ function Set-IniContent {
         $Config
     }
     catch {
-        Write-Error -ErrorRecord $_ -ErrorAction "Stop"
+        $PSCmdlet.ThrowTerminatingError($_)
     }
 }
 
@@ -210,46 +213,17 @@ function Export-IniFile {
     )
 
     try {
-        #This array will be the final ini output
-        $NewIniContent = @()
-
-        $KeyCount = 0
-        #Convert the dictionary into ini file format
-        foreach ($sectionHash in $Content.Keys)
-        {
-            $KeyCount++
-            #Create section headers
-            $NewIniContent += "[{0}]" -f $sectionHash
-
-            #Create all section content. Items with a Name and Value in the dictionary will be formatted as Name=Value. 
-            #Any items with no value will be formatted as Name only.
-            foreach ($key in $Content[$sectionHash].keys) {
-                $NewIniContent += 
-                if ($Key -like "Comment*"){
-                    #Comment
-                    $Content[$sectionHash][$key]
-                }    
-                elseif ($NewIniDictionary[$sectionHash][$key]) {
-                    #Name=Value format
-                    ($key, $Content[$sectionHash][$key]) -join "="
-                }
-                else {
-                    #Name only format
-                    $key
-                }
-            }
-            #Add a blank line after each section if there is more than one, but don't add one after the last section
-            if ($KeyCount -lt $Content.Keys.Count) {
-                $NewIniContent += ""
-            }
+        $NewContent = $Content.GetEnumerator() | ForEach-Object -Begin {
+            "[SetupConfig]"
+        } -Process {
+            "{0}={1}" -f $_.Key, $_.Value
         }
-        #Write $Content to the SetupConfig.ini file
 
-        $null = New-Item -Path $NewFile -ItemType File -Force
-        $NewIniContent -join "`r`n" | Set-Content -Path $NewFile -Force -NoNewline -ErrorAction "Stop"
+        #Write $Content to the SetupConfig.ini file
+        $NewContent | Set-Content -Path $NewFile -Force -ErrorAction "Stop"
     }
     catch {
-        Write-Error -ErrorRecord $_ -ErrorAction "Stop"
+        $PSCmdlet.ThrowTerminatingError($_)
     }
 }
 
@@ -260,6 +234,7 @@ try {
 
     if ((!($AlwaysReWrite.IsPresent)) -and ($CurrentIniFileContent -is [System.Collections.Specialized.OrderedDictionary])) {
         $NewIniDictionary = Set-IniContent -CurrentConfig $CurrentIniFileContent -DesiredConfig $Config
+        $ComplianceValue = $NewIniDictionary["Compliance"]
     }
     else {
         #If the ini file doesn't exist or has no content, then just set $NewIniDictionary to the $Config parameter
@@ -269,15 +244,18 @@ try {
 
     if ($Remediate) {
         #If no destination is specified, the source path is used
-        if (!($DestIniFile)) { $DestIniFile = $SourceIniFile }
-        $ComplianceValue =  $NewIniDictionary["Compliance"]
-        #Remove the compliance key so it doesn't get added to the final INI file.
-        $NewIniDictionary.Remove("Compliance")
-        Export-IniFile -Content $NewIniDictionary -NewFile $DestIniFile
+        if (-not $DestIniFile) { 
+            $DestIniFile = $SourceIniFile
+        }
+
+        Export-IniFile -Content $NewIniDictionary["SetupConfig"] -NewFile $DestIniFile
+
+        $ComplianceValue = $NewIniDictionary["Compliance"]
     }
     else {
-        $ComplianceValue =  $NewIniDictionary["Compliance"]
+        $ComplianceValue = $NewIniDictionary["Compliance"]
     }
+
     $ComplianceValue
 }
 catch {
