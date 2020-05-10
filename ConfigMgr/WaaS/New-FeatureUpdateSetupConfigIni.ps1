@@ -19,23 +19,27 @@ param (
 
     [Parameter()]
     [System.Collections.Specialized.OrderedDictionary]$Config = [ordered]@{
-        "SetupConfig" = [ordered]@{
-            "BitLocker"             = "AlwaysSuspend"
-            "Compat"                = "IgnoreWarning"
-            "Priority"              = "Normal"
-            "DynamicUpdate"         = "Enable"
-            "ShowOOBE"              = "None"
-            "Telemetry"             = "Enable"
-            "DiagnosticPrompt"      = "Enable"
-            #"PKey"                 = "NPPR9-FWDCX-D2C8J-H872K-2YT43"
-            "PostOOBE"              = "{0}\Scripts\SetupComplete.cmd" -f $FeatureUpdateTemp
-            #"PostRollBack"         = "{0}\Scripts\ErrorHandler.cmd" -f $FeatureUpdateTemp
-            #"PostRollBackContext"  = "System"
-            "CopyLogs"              = "\\sccm.acc.local\FeatureUpdateFailedLogs\$($ENV:COMPUTERNAME)"
-            #"InstallDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
-            #"MigrateDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
-        }
+        "BitLocker"             = "AlwaysSuspend"
+        "Compat"                = "IgnoreWarning"
+        "Priority"              = "Normal"
+        "DynamicUpdate"         = "Enable"
+        "ShowOOBE"              = "None"
+        "Telemetry"             = "Enable"
+        "DiagnosticPrompt"      = "Enable"
+        #"PKey"                 = "NPPR9-FWDCX-D2C8J-H872K-2YT43"
+        "PostOOBE"              = "{0}\Scripts\SetupComplete.cmd" -f $FeatureUpdateTemp
+        #"PostRollBack"         = "{0}\Scripts\ErrorHandler.cmd" -f $FeatureUpdateTemp
+        #"PostRollBackContext"  = "System"
+        "CopyLogs"              = "\\sccm.acc.local\FeatureUpdateFailedLogs\$($ENV:COMPUTERNAME)"
+        #"InstallDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
+        #"MigrateDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
     },
+
+    [Parameter()]
+    [String[]]$RemoveConfig = @(
+        "InstallDrivers"
+        "MigNEO"
+    ),
 
     [Parameter()]
     [String]$SourceIniFile = "$($env:SystemDrive)\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini",
@@ -160,41 +164,50 @@ function Set-IniContent {
         [System.Collections.Specialized.OrderedDictionary]$CurrentConfig,
 
         [Parameter()]
-        [System.Collections.Specialized.OrderedDictionary]$DesiredConfig
+        [System.Collections.Specialized.OrderedDictionary]$DesiredConfig,
+
+        [Parameter()]
+        [String[]]$RemoveConfigItems
     )
 
-    $Config = [ordered]@{
+    $Result = [ordered]@{
         "SetupConfig" = [ordered]@{}
         "Compliance"  = "Compliant"
     }
 
     try {
-        $CompareResult = Compare-Hashtable -Left $CurrentConfig.SetupConfig -Right $DesiredConfig.SetupConfig
+        $CompareResult = Compare-Hashtable -Left $CurrentConfig -Right $DesiredConfig
 
-        foreach ($Result in $CompareResult) {
-            switch ($Result.Side) {
+        foreach ($item in $CompareResult) {
+            switch ($item.Side) {
                 "==" {
                     # Exists in both, so keep
-                    $Config["SetupConfig"][$Result.Key] = $Result.LValue
+                    $Result["SetupConfig"][$item.Key] = $item.LValue
                 }
                 "<=" {
                     # Exists in current, but not desired, so don't change
-                    $Config["SetupConfig"][$Result.Key] = $Result.LValue
+                    $Result["SetupConfig"][$item.Key] = $item.LValue
                 }
                 "=>" {
                     # Exists in desired, but not current, so insert
-                    $Config["Compliance"] = "NonCompliant"
-                    $Config["SetupConfig"][$Result.Key] = $Result.RValue
+                    $Result["Compliance"] = "NonCompliant"
+                    $Result["SetupConfig"][$item.Key] = $item.RValue
                 }
                 "!=" {
                     # Exists in both, but current value doesn't match desired, so correct
-                    $Config["Compliance"] = "NonCompliant"
-                    $Config["SetupConfig"][$Result.Key] = $Result.RValue
+                    $Result["Compliance"] = "NonCompliant"
+                    $Result["SetupConfig"][$item.Key] = $item.RValue
                 }
             }
         }
 
-        $Config
+        foreach ($item in $RemoveConfigItems) {
+            if ($Result["SetupConfig"].Keys -contains $item) {
+                $Result["SetupConfig"].Remove($item)
+            }
+        }
+
+        $Result
     }
     catch {
         $PSCmdlet.ThrowTerminatingError($_)
@@ -232,13 +245,25 @@ try {
     }
 
     if (-not $AlwaysReWrite.IsPresent -And ($CurrentIniFileContent -is [System.Collections.Specialized.OrderedDictionary])) {
-        $NewIniDictionary = Set-IniContent -CurrentConfig $CurrentIniFileContent -DesiredConfig $Config
-        $ComplianceValue = $NewIniDictionary["Compliance"]
+        $SetIniContentSplat = @{
+            CurrentConfig = $CurrentIniFileContent["SetupConfig"]
+            DesiredConfig = $Config
+        }
+
+        if ($PSBoundParameters.ContainsKey("RemoveConfig")) {
+            $SetIniContentSplat["RemoveConfigItems"] = $RemoveConfig
+        }
+
+        # Set-IniContent returns two keys: the SetupConfig.ini content and the CI compliance value
+        $SetIniContentResult = Set-IniContent @SetIniContentSplat
+
+        $NewConfig = $SetIniContentResult["SetupConfig"]
+        $ComplianceValue = $SetIniContentResult["Compliance"]
     }
     else {
         #If the ini file doesn't exist or has no content, then just set $NewIniDictionary to the $Config parameter
-        $NewIniDictionary = $Config
-        $NewIniDictionary["Compliance"] = "NonCompliant"
+        $NewConfig = $Config
+        $ComplianceValue = "NonCompliant"
     }
 
     if ($Remediate) {
@@ -247,12 +272,7 @@ try {
             $DestIniFile = $SourceIniFile
         }
 
-        Export-IniFile -Content $NewIniDictionary["SetupConfig"] -File $DestIniFile
-
-        $ComplianceValue = $NewIniDictionary["Compliance"]
-    }
-    else {
-        $ComplianceValue = $NewIniDictionary["Compliance"]
+        Export-IniFile -Content $NewConfig -File $DestIniFile
     }
 
     $ComplianceValue
