@@ -42,7 +42,7 @@ param (
     ),
 
     [Parameter()]
-    [String]$SourceIniFile = "$($env:SystemDrive)\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini",
+    [String]$SourceIniFile = "{0}\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini" -f $env:SystemDrive,
 
     [Parameter()]
     [String]$DestIniFile,
