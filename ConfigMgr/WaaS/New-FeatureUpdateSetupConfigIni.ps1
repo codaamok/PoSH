@@ -184,12 +184,12 @@ function Set-IniContent {
                 }
                 "=>" {
                     # Exists in desired, but not current, so insert
-                    $Config["Compliant"] = "NonCompliant"
+                    $Config["Compliance"] = "NonCompliant"
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
                 "!=" {
                     # Exists in both, but current value doesn't match desired, so correct
-                    $Config["Compliant"] = "NonCompliant"
+                    $Config["Compliance"] = "NonCompliant"
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
             }
@@ -232,7 +232,7 @@ try {
         $CurrentIniFileContent = Get-IniContent -IniFile $SourceIniFile
     }
 
-    if ((!($AlwaysReWrite.IsPresent)) -and ($CurrentIniFileContent -is [System.Collections.Specialized.OrderedDictionary])) {
+    if (-not $AlwaysReWrite.IsPresent -And ($CurrentIniFileContent -is [System.Collections.Specialized.OrderedDictionary])) {
         $NewIniDictionary = Set-IniContent -CurrentConfig $CurrentIniFileContent -DesiredConfig $Config
         $ComplianceValue = $NewIniDictionary["Compliance"]
     }
