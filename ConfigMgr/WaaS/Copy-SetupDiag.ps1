@@ -41,6 +41,9 @@ function Remove-NTFSIdentity {
     Set-ACL -Path $Path -AclObject $ACL
 }
 
+Remove-NTFSInheritance -Path $FeatureUpdateTemp
+Remove-NTFSIdentity -Path $FeatureUpdateTemp -Identity "NT AUTHORITY\Authenticated Users"
+
 if (-not(Test-Path $FeatureUpdateTemp)) {
     $null = New-Item -Path @(
         "{0}\Scripts" -f $FeatureUpdateTemp
