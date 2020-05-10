@@ -25,15 +25,18 @@ param (
 $LogPath = "{0}\Logs" -f $FeatureUpdateTemp
 $CustomActionScriptsFolder = "{0}\System32\update\run\{1}" -f $env:windir, $GUID
 
-if (-not(Test-Path $CustomActionScriptsFolder)) {
-    $null = New-Item -Path @(
-        $CustomActionScriptsFolder
-        "{0}\Scripts" -f $FeatureUpdateTemp
-        "{0}\Logs" -f $FeatureUpdateTemp
-    ) -ItemType "Directory" -Force -ErrorAction "Stop"
-    $Folder = Get-Item -Path $FeatureUpdateTemp -Force -ErrorAction "SilentlyContinue"
-    $Folder.Attributes = $Folder.Attributes -bor "Hidden"
+@(
+    $CustomActionScriptsFolder
+    "{0}\Scripts" -f $FeatureUpdateTemp
+    "{0}\Logs" -f $FeatureUpdateTemp
+) | ForEach-Object {
+    if (-not (Test-Path $_)) {
+        $null = New-Item -Path $_ -ItemType "Directory" -Force -ErrorAction "Stop"
+    }
 }
+
+$Folder = Get-Item -Path $FeatureUpdateTemp -Force -ErrorAction "SilentlyContinue"
+$Folder.Attributes = $Folder.Attributes -bor "Hidden"
 
 $CommonLines = {
     param (
