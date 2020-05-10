@@ -41,9 +41,6 @@ function Remove-NTFSIdentity {
     Set-ACL -Path $Path -AclObject $ACL
 }
 
-Remove-NTFSInheritance -Path $FeatureUpdateTemp
-Remove-NTFSIdentity -Path $FeatureUpdateTemp -Identity "NT AUTHORITY\Authenticated Users"
-
 if (-not(Test-Path $FeatureUpdateTemp)) {
     $null = New-Item -Path @(
         "{0}\Scripts" -f $FeatureUpdateTemp
@@ -52,5 +49,8 @@ if (-not(Test-Path $FeatureUpdateTemp)) {
     $Folder = Get-Item -Path $FeatureUpdateTemp -Force -ErrorAction "SilentlyContinue"
     $Folder.Attributes = $Folder.Attributes -bor "Hidden"
 }
+
+Remove-NTFSInheritance -Path $FeatureUpdateTemp
+Remove-NTFSIdentity -Path $FeatureUpdateTemp -Identity "NT AUTHORITY\Authenticated Users"
 
 Copy-Item -Path .\SetupDiag.exe -Destination $FeatureUpdateTemp\SetupDiag.exe -Force -ErrorAction "Stop"
