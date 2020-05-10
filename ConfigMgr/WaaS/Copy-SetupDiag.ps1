@@ -11,6 +11,36 @@ param (
     [String]$FeatureUpdateTemp = "C:\~AdamCookFeatureUpdateTemp"
 )
 
+function Remove-NTFSInheritance {
+    param (
+        [Parameter(Mandatory)]
+        [String]$Path
+    )
+    $isProtected = $true
+    $preserveInheritance = $true
+    $DirectorySecurity = Get-ACL $Path
+    $DirectorySecurity.SetAccessRuleProtection($isProtected, $preserveInheritance)
+    Set-ACL $Path -AclObject $DirectorySecurity
+}
+
+function Remove-NTFSIdentity {
+    param (
+        [Parameter(Mandatory)]
+        [String]$Path,
+
+        [Parameter(Mandatory)]
+        [String[]]$Identity
+    )
+    $ACL = Get-ACL -Path $Path -ErrorAction "Stop"
+    $Rules = foreach ($id in $identity) {
+        $ACL.Access | Where-Object { -not $_.IsInherited -and $_.IdentityReference -eq $id }
+    }
+    foreach ($Rule in $Rules) {
+        $null = $ACL.RemoveAccessRuleAll($Rule)
+    }
+    Set-ACL -Path $Path -AclObject $ACL
+}
+
 if (-not(Test-Path $FeatureUpdateTemp)) {
     $null = New-Item -Path @(
         "{0}\Scripts" -f $FeatureUpdateTemp

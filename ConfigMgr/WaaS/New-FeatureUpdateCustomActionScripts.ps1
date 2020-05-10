@@ -22,6 +22,36 @@ param (
     [String]$GUID = "fdc3f7c8-a0ce-40c2-9e6c-a0669eb7e054"
 )
 
+function Remove-NTFSInheritance {
+    param (
+        [Parameter(Mandatory)]
+        [String]$Path
+    )
+    $isProtected = $true
+    $preserveInheritance = $true
+    $DirectorySecurity = Get-ACL $Path
+    $DirectorySecurity.SetAccessRuleProtection($isProtected, $preserveInheritance)
+    Set-ACL $Path -AclObject $DirectorySecurity
+}
+
+function Remove-NTFSIdentity {
+    param (
+        [Parameter(Mandatory)]
+        [String]$Path,
+
+        [Parameter(Mandatory)]
+        [String[]]$Identity
+    )
+    $ACL = Get-ACL -Path $Path -ErrorAction "Stop"
+    $Rules = foreach ($id in $identity) {
+        $ACL.Access | Where-Object { -not $_.IsInherited -and $_.IdentityReference -eq $id }
+    }
+    foreach ($Rule in $Rules) {
+        $null = $ACL.RemoveAccessRuleAll($Rule)
+    }
+    Set-ACL -Path $Path -AclObject $ACL
+}
+
 $LogPath = "{0}\Logs" -f $FeatureUpdateTemp
 $CustomActionScriptsFolder = "{0}\System32\update\run\{1}" -f $env:windir, $GUID
 
@@ -34,6 +64,9 @@ $CustomActionScriptsFolder = "{0}\System32\update\run\{1}" -f $env:windir, $GUID
         $null = New-Item -Path $_ -ItemType "Directory" -Force -ErrorAction "Stop"
     }
 }
+
+Remove-NTFSInheritance -Path $FeatureUpdateTemp
+Remove-NTFSIdentity -Path $FeatureUpdateTemp -Identity "NT AUTHORITY\Authenticated Users"
 
 $Folder = Get-Item -Path $FeatureUpdateTemp -Force -ErrorAction "SilentlyContinue"
 $Folder.Attributes = $Folder.Attributes -bor "Hidden"
