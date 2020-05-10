@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Generate custom action scripts for Windows 10 Feature Updates.
-    Use in a ConfigMgr CI.
+    Use in a ConfigMgr CI, although this always "remediates", i.e. it overwrites the generated files with each invocation.
 .NOTES
     Author: Adam Cook (@codaamok)
 #>
