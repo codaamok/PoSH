@@ -184,12 +184,12 @@ function Set-IniContent {
                 }
                 "=>" {
                     # Exists in desired, but not current, so insert
-                    $Config["Compliant"] = $false
+                    $Config["Compliant"] = "NonCompliant"
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
                 "!=" {
                     # Exists in both, but current value doesn't match desired, so correct
-                    $Config["Compliant"] = $false
+                    $Config["Compliant"] = "NonCompliant"
                     $Config["SetupConfig"][$Result.Key] = $Result.RValue
                 }
             }
