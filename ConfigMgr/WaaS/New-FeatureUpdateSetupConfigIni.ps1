@@ -36,10 +36,7 @@ param (
     },
 
     [Parameter()]
-    [String[]]$RemoveConfig = @(
-        "InstallDrivers"
-        "MigNEO"
-    ),
+    [String[]]$RemoveConfig,
 
     [Parameter()]
     [String]$SourceIniFile = "{0}\Users\Default\AppData\Local\Microsoft\Windows\WSUS\SetupConfig.ini" -f $env:SystemDrive,
@@ -245,17 +242,9 @@ try {
     }
 
     if (-not $AlwaysReWrite.IsPresent -And ($CurrentIniFileContent -is [System.Collections.Specialized.OrderedDictionary])) {
-        $SetIniContentSplat = @{
-            CurrentConfig = $CurrentIniFileContent["SetupConfig"]
-            DesiredConfig = $Config
-        }
-
-        if ($PSBoundParameters.ContainsKey("RemoveConfig")) {
-            $SetIniContentSplat["RemoveConfigItems"] = $RemoveConfig
-        }
 
         # Set-IniContent returns two keys: the SetupConfig.ini content and the CI compliance value
-        $SetIniContentResult = Set-IniContent @SetIniContentSplat
+        $SetIniContentResult = Set-IniContent -CurrentConfig $CurrentIniFileContent["SetupConfig"] -DesiredConfig $Config -RemoveConfigItems $RemoveConfig
 
         $NewConfig = $SetIniContentResult["SetupConfig"]
         $ComplianceValue = $SetIniContentResult["Compliance"]
