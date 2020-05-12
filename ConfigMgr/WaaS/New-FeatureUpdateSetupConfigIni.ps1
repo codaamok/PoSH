@@ -30,7 +30,7 @@ param (
         "PostOOBE"              = "{0}\Scripts\SetupComplete.cmd" -f $FeatureUpdateTemp
         #"PostRollBack"         = "{0}\Scripts\ErrorHandler.cmd" -f $FeatureUpdateTemp
         #"PostRollBackContext"  = "System"
-        "CopyLogs"              = "\\sccm.acc.local\FeatureUpdateFailedLogs\$($ENV:COMPUTERNAME)"
+        "CopyLogs"              = "\\sccm.acc.local\FeatureUpdateFailedLogs\{0}" -f $env:COMPUTERNAME
         #"InstallDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
         #"MigrateDrivers"       = "C:\Windows\Temp\PathToDrivers" # Consider adding this if we need it in the future
     },
@@ -229,6 +229,7 @@ function Export-IniFile {
         }
 
         #Write $Content to the SetupConfig.ini file
+        New-Item -Path $File -ItemType "File" -Force -ErrorAction "Stop"
         $NewContent | Set-Content -Path $File -Force -ErrorAction "Stop"
     }
     catch {
