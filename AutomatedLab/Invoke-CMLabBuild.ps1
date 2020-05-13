@@ -22,5 +22,5 @@ elseif ($PostInstallOnly.IsPresent) {
     .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
 }
 else {
-    .\CM-1902.ps1 -AutoLogon -ExternalVMSwitchName "Internet2"
+    .\CM-1902.ps1 -AutoLogon -NoInternetAccess
 }
