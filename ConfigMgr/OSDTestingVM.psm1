@@ -112,7 +112,7 @@ function New-TestVM {
     Set-VMFirmware -ComputerName $VMHost -VMName $VMName -EnableSecureBoot $SecureBoot -FirstBootDevice $Adapter
     Set-VMMemory -ComputerName $VMHost -VMName $VMName -DynamicMemoryEnabled $true -StartupBytes ([int64]1GB) -MaximumBytes ([int64]1GB*4) -MinimumBytes ([int64]1GB)
     Set-VMProcessor -ComputerName $VMHost -VMName $VMName -Count 2
-    Set-VMNetworkAdapterVlan -ComputerName $VMHost -VMName $VMName -VlanId 100 -Access
+    Set-VMNetworkAdapterVlan -ComputerName $VMHost -VMName $VMName -Access
     Set-VMKeyProtector -ComputerName $VMHost -VMName $VMName -NewLocalKeyProtector
     if ($TPM) {
         Enable-VMTPM -ComputerName $VMHost -VMName $VMName -Confirm:$false
