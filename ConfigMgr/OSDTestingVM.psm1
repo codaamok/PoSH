@@ -80,13 +80,9 @@ function New-TestVM {
         [ValidateNotNullOrEmpty()]
         [String]$VMName,
 
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [String]$CollectionName,
-
         [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [String]$SiteServer,
+        [String]$SwitchName = "External",
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
@@ -97,12 +93,20 @@ function New-TestVM {
 
         [Parameter()]
         [ValidateSet("On", "Off")]
-        [String]$SecureBoot
+        [String]$SecureBoot = "On",
+
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [String]$CollectionName,
+
+        [Parameter()]
+        [ValidateNotNullOrEmpty()]
+        [String]$SiteServer
     )
 
     $Path = (Get-VMHost -ComputerName $VMHost).VirtualMachinePath
 
-    New-VM -ComputerName $VMHost -Name $VMName -Generation 2 -Path $Path -NewVHDPath "$Path\$VMName\System.vhdx" -NewVHDSizeBytes ([int64]1gb*60) -SwitchName "Cluster-Switch" -Confirm:$false -Version "9.0"
+    New-VM -ComputerName $VMHost -Name $VMName -Generation 2 -Path $Path -NewVHDPath "$Path\$VMName\System.vhdx" -NewVHDSizeBytes ([int64]1gb*60) -SwitchName $SwitchName -Confirm:$false -Version "9.0" -ErrorAction "Stop"
     Set-VM -ComputerName $VMHost -Name $VMName -AutomaticStartAction "Nothing" -AutomaticStopAction "ShutDown"
     $Adapter = Get-VMNetworkAdapter -ComputerName $VMHost -VMName $VMName
     Set-VMFirmware -ComputerName $VMHost -VMName $VMName -EnableSecureBoot $SecureBoot -FirstBootDevice $Adapter
