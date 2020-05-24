@@ -83,9 +83,9 @@ function New-LXPRepository {
 function New-FoDLanguageFeaturesRepository {
     <#
     .SYNOPSIS
-        Copy out Features on Demand of LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech from Features on Demand ISO
+        Copy out only the languages you want of the Features on Demand LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech from Features on Demand ISO
     .DESCRIPTION
-        Copy out Features on Demand of LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech from Features on Demand ISO
+        Copy out only the languages you want of the Features on Demand LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech from Features on Demand ISO
     .PARAMETER Langauge
         Language(s) you want to extract, e.g. en-us, fr-fr, de-de etc
     .PARAMETER SourcePath
