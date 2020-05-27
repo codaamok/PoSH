@@ -1,5 +1,6 @@
 #TODO what if deployment types already exist?
 #TODO add fod detection to system install
+#TODO generalise windows version as param
 function New-CMLanguagePackApplication {
     [CmdletBinding()]
     param (
