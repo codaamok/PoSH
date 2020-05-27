@@ -1,51 +1,53 @@
+# TODO Pass GC at parameter, check it is the win32_operatingsystem wql query
+# TODO maybe optionally create the install.ps1
+# TODO use an existing Application if it exists
+
 $Languages = @(
     "fr-FR",
     "de-DE"
 )
 
 $WindowsVersion = @{
-    "1909" = "18363"
+    "Version" = "1909"
+    "Build" = "18363" 
 }
 
 $GlobalCondition = Get-CMGlobalCondition -Name "Operating System build"
 
 foreach($Language in $Languages) {
     # Sub expression to force key name to be string
-    $Obj = New-CMApplication -Name "Windows 10 x64 $($WindowsVersion.Keys) Language Pack"
+    $AppObj = New-CMApplication -Name ("Windows 10 x64 Language Pack - {0}" -f $Language)
 
     $InstallSplat = @{
-        ApplicationName          = $Obj.LocalizedDisplayName
-        DeploymentTypeName       = "Install"
+        ApplicationName          = $AppObj.LocalizedDisplayName
+        DeploymentTypeName       = "{0} ({1}) - Install language items (SYSTEM)" -f $WindowsVersion["Version"], $WindowsVersion["Build"]
         ContentLocation          = "\\sccm.acc.local\Applications$\Language\{0}" -f $Language
         InstallCommand           = 'powershell.exe -executionpolicy bypass -noprofile -file ".\Install.ps1"'
         AddDetectionClause       = New-CMDetectionClauseRegistryKey -Hive "LocalMachine" -KeyName ("SYSTEM\CurrentControlSet\Control\MUI\UILanguages\{0}" -f $Language) -Existence
         UserInteractionMode      = "Hidden"
         RebootBehavior           = "NoAction"
-        AddRequirement           = $GlobalCondition | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["1909"] -RuleOperator IsEquals
+        AddRequirement           = $GlobalCondition | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
         LogonRequirementType     = "OnlyWhenUserLoggedOn"
         InstallationBehaviorType = "InstallForSystem"
     }
 
-    # Example contents of Install.ps1
-    # "& { Get-ChildItem -Filter `"*.cab`" | ForEach-Object { dism.exe /Online /Add-Package /PackagePath:$_ /Quiet /NoRestart }
-    # Add-AppxProvisionedPackage -Online -PackagePath (Get-ChildItem -Filter `"*.appx`") -LicensePath `".\License.xml`"
-    # $p = (Get-AppxPackage | Where-Object { $_.Name -like `"*LanguageExperiencePack{0}*`" }).InstallLocation
-    # Add-AppxPackage -Register -Path $p\AppxManifest.xml -DisableDevelopmentMode }"' -f $Language
-
-    $InstallDT = Add-CMScriptDeploymentType @InstallSplat
+    $InstallDTObj = Add-CMScriptDeploymentType @InstallSplat | ForEach-Object { Get-CMDeploymentType -DeploymentTypeId $_.CI_ID -ApplicationName $AppObj.LocalizedDisplayName }
 
     $SetLanguageListSplat = @{
-        ApplicationName          = $Obj.LocalizedDisplayName
-        DeploymentTypeName       = "Configure language list"
-        InstallCommand           = 'powershell.exe -executionpolicy bypass -noprofile -command "& { $List = Get-WinUserLanguageList; $List.Add(`"{0}`"); Set-WinUserLanguageList $List -Force; exit 1641 }"' -f $Language
+        ApplicationName          = $AppObj.LocalizedDisplayName
+        DeploymentTypeName       = "{0} ({1}) - Configure language list (USER)" -f $WindowsVersion["Version"], $WindowsVersion["Build"]
+        InstallCommand           = 'powershell.exe -executionpolicy bypass -noprofile -command "& {{ $List = Get-WinUserLanguageList; $List.Add(`"{0}`"); Set-WinUserLanguageList $List -Force; exit 1641 }}"' -f $Language
         ScriptLanguage           = "PowerShell"
-        ScriptText               = "if ((Get-WinUserLanguageList).LanguageTag -contains `"{0}`") { Write-Output `"Detected`""
+        ScriptText               = "if ((Get-WinUserLanguageList).LanguageTag -contains `"{0}`") {{ Write-Output `"Detected`" }}" -f $Language
         UserInteractionMode      = "Hidden"
         RebootBehavior           = "ForceReboot"
-        AddRequirement           = $InstallSplat["AddRequirement"]
-        LogonRequirementType     = "OnlyWhenUserLoggedOn"
+        AddRequirement           = $GlobalCondition | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
         InstallationBehaviorType = "InstallForUser"
     }
 
-    $null = Add-CMScriptDeploymentType @SetLanguageListSplat
+    $ConfigureDTObj = Add-CMScriptDeploymentType @SetLanguageListSplat | ForEach-Object { Get-CMDeploymentType -DeploymentTypeId $_.CI_ID -ApplicationName $AppObj.LocalizedDisplayName }
+
+    $null = $ConfigureDTObj | Set-CMDeploymentType -Priority "Increase"
+    $null = $ConfigureDTObj | New-CMDeploymentTypeDependencyGroup -GroupName "Install language items" | Add-CMDeploymentTypeDependency -DeploymentTypeDependency $InstallDTObj -IsAutoInstall:$true
+
 }
