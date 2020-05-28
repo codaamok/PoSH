@@ -11,9 +11,9 @@ function New-LPRepository {
     .PARAMETER TargetPath
         Destination path to copy Language Packs to. A folder per language will be created under this folder.
     .EXAMPLE
-        PS C:\> New-LPRepository -Language "fr-FR", "de-DE" -SourcePath "I:\x64\langpacks" -TargetPath "F:\OSD\Source\1909-LP"
+        PS C:\> New-LPRepository -Language "fr-FR", "de-DE" -SourcePath "I:\x64\langpacks" -TargetPath "F:\OSD\Source\1909-Languages"
 
-        Copies Language Packs named "fr-FR" and "de-DE" in path "I:\LocalExperiencePack" to "F:\OSD\Source\1909-LP\fr-FR" and "F:\OSD\Source\1909-LP\de-DE"
+        Copies Language Packs named "fr-FR" and "de-DE" from path "I:\LocalExperiencePack" to "F:\OSD\Source\1909-Languages\LP\fr-FR" and "F:\OSD\Source\1909-Languages\LP\de-DE"
     .NOTES
         Author: Adam Cook (@codaamok)
     #>
@@ -30,11 +30,12 @@ function New-LPRepository {
     Get-ChildItem -Path $SourcePath -Filter "*.cab" | ForEach-Object {
         if ($_.Name -match "Microsoft-Windows-Client-Language-Pack_x64_([a-z]{2}-[a-z]{2})\.cab") {
             if ($Language -contains $Matches[1]) {
-                if (-not (Test-Path $TargetPath\$Matches[1])) {
-                    New-Item -Path $TargetPath -Name $Matches[1] -ItemType Directory -Force
+                $Path = "{0}\LP\{1}" -f $TargetPath, $Matches[1]
+                if (-not (Test-Path $Path)) {
+                    New-Item -Path $Path -ItemType Directory -Force
                 }
     
-                Copy-Item -Path $_.FullName -Destination ("{0}\{1}" -f $TargetPath, $Matches[1]) -Force
+                Copy-Item -Path $_.FullName -Destination $Path -Force
             }
         }
     }
@@ -53,9 +54,9 @@ function New-LXPRepository {
     .PARAMETER TargetPath
         Destination path to copy the folders to
     .EXAMPLE
-        PS C:\> New-LXPRepository -Language "fr-FR", "de-DE" -SourcePath "I:\LocalExperiencePack" -TargetPath "F:\OSD\Source\1909-LXP"
+        PS C:\> New-LXPRepository -Language "fr-FR", "de-DE" -SourcePath "I:\LocalExperiencePack" -TargetPath "F:\OSD\Source\1909-Languages"
 
-        Copies folders named "fr-FR" and "de-DE" in Language Experience Pack ISO path "I:\LocalExperiencePack" to "F:\OSD\Source\1909-LXP"
+        Copies folders named "fr-FR" and "de-DE" in Language Experience Pack ISO path "I:\LocalExperiencePack" to "F:\OSD\Source\1909-Languages\LXP\"
     .NOTES
         Author: Adam Cook (@codaamok)
     #>
@@ -71,11 +72,12 @@ function New-LXPRepository {
     
     Get-ChildItem -Path $SourcePath | ForEach-Object { 
         if ($Language -contains $_.Name) {
-            if (-not (Test-Path $TargetPath\$_.Name)) {
-                New-Item -Path $TargetPath -Name $_.Name -ItemType Directory -Force
+            $Path = "{0}\LXP\{1}" -f $TargetPath, $_.Name
+            if (-not (Test-Path $Path)) {
+                New-Item -Path $Path -ItemType Directory -Force
             }
 
-            Copy-Item -Path ("{0}\*" -f $_.FullName) -Destination ("{0}\{1}" -f $TargetPath, $_.Name) -Force
+            Copy-Item -Path ("{0}\*" -f $_.FullName) -Destination $Path -Force
         }
     }
 }
@@ -93,9 +95,9 @@ function New-FoDLanguageFeaturesRepository {
     .PARAMETER TargetPath
         Destination path to copy Features on Demand to. A folder per language will be created under this folder.
     .EXAMPLE
-        PS C:\> New-FoDLanguageFeaturesRepository -Language "fr-FR", "de-DE" -SourcePath "I:\" -TargetPath "F:\OSD\Source\1909-FoD"
+        PS C:\> New-FoDLanguageFeaturesRepository -Language "fr-FR", "de-DE" -SourcePath "I:\" -TargetPath "F:\OSD\Source\1909-Languages"
 
-        Copies Features on Demand of LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech with language elements "fr-FR", "de-DE" in path "I:\" to "F:\OSD\Source\1909-FoD\fr-FR" and "F:\OSD\Source\1909-FoD\de-DE"
+        Copies Features on Demand of LanguageFeatures Basic, Handwriting, OCR, Speech and TextToSpeech with language elements "fr-FR", "de-DE" in path "I:\" to "F:\OSD\Source\1909-Languages\FoD\fr-FR" and "F:\OSD\Source\1909-Languages\FoD\de-DE"
     .NOTES
         Author: Adam Cook (@codaamok)
     #>
@@ -112,11 +114,12 @@ function New-FoDLanguageFeaturesRepository {
     Get-ChildItem -Path $SourcePath | ForEach-Object {
         if ($_.Name -match "LanguageFeatures-\w+-([\w]{2}-[\w]{4}-[\w]{2}|[\w]{2}-[\w]{2})") {
             if ($Language -contains $Matches[1]) {
-                if (-not (Test-Path $TargetPath\$Matches[1])) {
-                    New-Item -Path $TargetPath -Name $Matches[1] -ItemType Directory -Force
+                $Path = "{0}\FoD\{1}" -f $TargetPath, $Matches[1]
+                if (-not (Test-Path $Path)) {
+                    New-Item -Path $Path -ItemType Directory -Force
                 }
     
-                Copy-Item -Path $_.FullName -Destination ("{0}\{1}" -f $TargetPath, $Matches[1]) -Force
+                Copy-Item -Path $_.FullName -Destination $Path -Force
             }
         }
     }
