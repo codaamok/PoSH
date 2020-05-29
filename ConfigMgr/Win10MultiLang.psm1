@@ -128,18 +128,15 @@ function New-FoDLanguageFeaturesRepository {
 function New-CMLanguagePackApplication {
     <#
     .SYNOPSIS
-        Short description
+        Create a Configuration Manager Application with two deployment types to install LP, LXP and FoD (as system) and make the language available to the user in the Settings language list.
     .DESCRIPTION
-        Long description
+        Create a Configuration Manager Application with two deployment types to install LP, LXP and FoD (as system) and make the language available to the user in the Settings language list.
     .EXAMPLE
-        PS C:\> <example usage>
+        PS C:\> New-CMLanguagePackApplication
+
         Explanation of what the example does
-    .INPUTS
-        Inputs (if any)
-    .OUTPUTS
-        Output (if any)
     .NOTES
-        General notes
+        Author: Adam Cook (@codaamok)
     #>
     [CmdletBinding()]
     param (
@@ -212,20 +209,21 @@ function New-CMLanguagePackApplication {
 
         Set-Location ("{0}:\" -f $SiteCode) -ErrorAction "Stop"
 
-        $GlobalCondition = Get-CMGlobalCondition -Name $GlobalConditionName
+        $GlobalCondition_OSBuild = Get-CMGlobalCondition -Name $GlobalConditionName
+        $GlobalCondition_OS = Get-CMGlobalCondition -Name 'Operating System' | Where-Object { $_.ModelName -eq 'GLOBAL/OperatingSystem' }
 
-        if ($null -eq $GlobalCondition) {
+        if ($null -eq $GlobalCondition_OSBuild) {
             if ($CreateGlobalConditionIfMissing.IsPresent) {
                 Write-Warning -Message "Global Condition missing, creating"
-                $GlobalCondition = New-CMGlobalConditionWqlQuery -Name "Operating System build" -Namespace "root\cimv2" -Class "Win32_OperatingSystem" -Property "BuildNumber" -DataType "String"
+                $GlobalCondition_OSBuild = New-CMGlobalConditionWqlQuery -Name "Operating System build" -Namespace "root\cimv2" -Class "Win32_OperatingSystem" -Property "BuildNumber" -DataType "String"
             }
             else {
                 Write-Error -Message ("Cannot find Global Condition '{0}', consider using -CreateGlobalConditionIfMissing" -f $GlobalConditionName) -Category "ObjectNotFound" -ErrorAction "Stop"
             }
         }
         else {
-            if (-not ($GlobalCondition.SDMPackageXML | Select-String -SimpleMatch "<WqlQueryDiscoverySource><Namespace>root\cimv2</Namespace><Class>Win32_OperatingSystem</Class><Property>BuildNumber</Property></WqlQueryDiscoverySource>")) {
-                Write-Error -Message ("Global Condition '{0}' found, but does not use WQL query with class Win32_OperatingSystem property BuildNumber" -f $GlobalCondition.LocalizedDisplayName) -Category "ObjectNotFound" -ErrorAction "Stop"
+            if (-not ($GlobalCondition_OSBuild.SDMPackageXML | Select-String -SimpleMatch "<WqlQueryDiscoverySource><Namespace>root\cimv2</Namespace><Class>Win32_OperatingSystem</Class><Property>BuildNumber</Property></WqlQueryDiscoverySource>")) {
+                Write-Error -Message ("Global Condition '{0}' found, but does not use WQL query with class Win32_OperatingSystem property BuildNumber" -f $GlobalCondition_OSBuild.LocalizedDisplayName) -Category "ObjectNotFound" -ErrorAction "Stop"
             }
         }
     }
@@ -297,7 +295,10 @@ function New-CMLanguagePackApplication {
                 AddDetectionClause       = $DetectionMethod
                 UserInteractionMode      = "Hidden"
                 RebootBehavior           = "NoAction"
-                AddRequirement           = $GlobalCondition | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
+                AddRequirement           = @(
+                    $GlobalCondition_OSBuild | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
+                    $GlobalCondition_OS | New-CMRequirementRuleOperatingSystemValue -PlatformString "Windows/All_x64_Windows_10_and_higher_Clients" -RuleOperator "OneOf"
+                )
                 LogonRequirementType     = "OnlyWhenUserLoggedOn"
                 InstallationBehaviorType = "InstallForSystem"
             }
@@ -312,7 +313,10 @@ function New-CMLanguagePackApplication {
                 ScriptText               = "if ((Get-WinUserLanguageList).LanguageTag -contains `"{0}`") {{ Write-Output `"Detected`" }}" -f $Language
                 UserInteractionMode      = "Hidden"
                 RebootBehavior           = "ForceReboot"
-                AddRequirement           = $GlobalCondition | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
+                AddRequirement           = @(
+                    $GlobalCondition_OSBuild | New-CMRequirementRuleCommonValue -Value1 $WindowsVersion["Build"] -RuleOperator IsEquals
+                    $GlobalCondition_OS | New-CMRequirementRuleOperatingSystemValue -PlatformString "Windows/All_x64_Windows_10_and_higher_Clients" -RuleOperator "OneOf"
+                )
                 InstallationBehaviorType = "InstallForUser"
             }
     
