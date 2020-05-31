@@ -1371,7 +1371,7 @@ Function Set-CMShortcuts {
                 $SoftwareCenter = "{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")
             }
             (Test-Path -LiteralPath ("{0}\Programs\Microsoft Endpoint Manager\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu"))) {
-                $SoftwareCenter = "{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")
+                $SoftwareCenter = "{0}\Programs\Microsoft Endpoint Manager\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")
             }
         }
 
