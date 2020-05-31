@@ -1366,13 +1366,22 @@ Function Set-CMShortcuts {
             }
         }
 
+        switch ($true) {
+            (Test-Path -LiteralPath ("{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu"))) {
+                $SoftwareCenter = "{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")
+            }
+            (Test-Path -LiteralPath ("{0}\Programs\Microsoft Endpoint Manager\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu"))) {
+                $SoftwareCenter = "{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")
+            }
+        }
+
         Add-FileAssociation -Extension ".log" -TargetExecutable $CMTracePath
         Add-FileAssociation -Extension ".lo_" -TargetExecutable $CMTracePath
         
         switch ($client) {  
             $true {
                 New-Shortcut -Target ("{0}\System32\control.exe" -f $env:windir) -TargetArguments "smscfgrc" -ShortcutName "smscfgrc.lnk"
-                New-Shortcut -Target ("{0}\Programs\Microsoft System Center\Configuration Manager\Software Center.lnk" -f [Environment]::GetFolderPath("CommonStartMenu")) -ShortcutName "Software Center.lnk"
+                New-Shortcut -Target $SoftwareCenter -ShortcutName "Software Center.lnk"
                 New-Shortcut -Target ("{0}\CCM" -f $env:windir) -ShortcutName "CCM.lnk"
                 New-Shortcut -Target ("{0}\ccmsetup" -f $env:windir) -ShortcutName "ccmsetup.lnk"
                 New-Shortcut -Target ("{0}\ccmcache" -f $env:windir) -ShortcutName "ccmcache.lnk"
