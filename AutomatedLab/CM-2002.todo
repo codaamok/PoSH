@@ -1,0 +1,27 @@
+This document uses this extension: https://github.com/sandy081/vscode-todotasks
+
+CM-1902:
+    Testing command line: 
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -LabName "CMLab01" -VMPath "D:\AutomatedLab\" -Domain "acc.lab" -AddressSpace "192.168.100.0/24" -SiteCode "ACC" -SiteName "Adam Cook" -DCHostname "DC01" -DCCPU 2 -CMHostname "CM01" -CMCPU 4 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2016" -ExcludePostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -CMVersion "1910" -LogViewer "OneTrace" -OSVersion "2016" -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2019" -DCMemory 2GB -CMMemory 8GB -AdminUser "Adam" -AdminPass "Orange123" 
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+    Tasks for initial release:
+        ✔ handle updates, because none are available yet, but there will be @done (03/06/2020, 11:34:22)
+        ✔ remove onetrace / cmtrace hotpotato if site isn't of minimum version. it comes in 2002 onwards now. @done (03/06/2020, 10:48:32)
+        ✔ support eval os media @done (03/06/2020, 15:40:21)
+        ✔ support technical previews @done (05/06/2020, 13:16:55)
+            ✔ document that using TP means you must have internet access, mainly because of https://twitter.com/codaamok/status/1268588138437509120 @done (05/06/2020, 13:16:59)
+        ✔ clean up mix of join-path and string format operator @done (05/06/2020, 13:07:32)
+        ✔ clean up mixed uses of terms "folder" and "directory" @done (05/06/2020, 13:09:30)
+        ✔ perhaps parameterise ADK and WinPE URLs, like you've done with CMDownloadURL, just so it's easier for future support @done (05/06/2020, 12:54:34)
+        ✔ Rebrand as SysManSquad instead of WinAdmins @done (05/06/2020, 12:56:50)
+        ✘ consider ditching WDS for PXE responder @cancelled (05/06/2020, 13:28:32)
+        ✘ maybe consider allowing the user to optionally install things such as RSP, SUP and DP? @cancelled (05/06/2020, 13:28:33)
+        ✔ align changes with cm-1902 where possible @done (05/06/2020, 13:28:28)
+        ✔ remove "Latest" from -CMVersion on CM-1902.ps1 and check anywhere that uses "Latest" @done (05/06/2020, 13:28:26)

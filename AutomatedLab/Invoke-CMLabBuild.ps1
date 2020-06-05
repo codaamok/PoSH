@@ -1,5 +1,8 @@
 #Requires -Version 5.1 -Modules "AutomatedLab"
 Param (
+    [Parameter(Mandatory)]
+    [ValidateSet("CM-1902", "CM-2002")]
+    [String]$CustomRoleVersion,
     [Switch]$ExcludePostInstall,
     [Switch]$PostInstallOnly,
     [Switch]$DoNotCopyFiles
@@ -10,17 +13,30 @@ if ($ExcludePostInstall.IsPresent -and $PostInstallOnly.IsPresent) {
 }
 
 if (-not $DoNotCopyFiles.IsPresent) {
-    $Source = "{0}\CustomRoles\CM-1902\*" -f $PSScriptRoot
-    $Destination = "{0}\CustomRoles\CM-1902\" -f $global:labSources
+    $Source = "{0}\CustomRoles\{1}\*" -f $PSScriptRoot, $CustomRoleVersion
+    $Destination = "{0}\CustomRoles\{1}\" -f $global:labSources, $CustomRoleVersion
+    foreach ($folder in @($Source, $Destination)) {
+        if (-not (Test-Path $folder)) {
+            New-Item -Path $folder -ItemType Directory -Force -ErrorAction "Stop"
+        }
+    }
     Copy-Item -Path $Source -Destination $Destination -Recurse -Force -ErrorAction "Stop"
 }
 
+$Arguments = @{}
+
 if ($ExcludePostInstall.IsPresent) {
-    .\CM-1902.ps1 -AutoLogon -ExcludePostInstallations
+    $Arguments["AutoLogon"] = $true
+    $Arguments["ExcludePostInstallations"] = $true
 }
 elseif ($PostInstallOnly.IsPresent) {
-    .\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+    $Arguments["SkipDomainCheck"]   = $true
+    $Arguments["SkipLabNameCheck"]  = $true
+    $Arguments["SkipHostnameCheck"] = $true
+    $Arguments["PostInstallations"] = $true
 }
 else {
-    .\CM-1902.ps1 -AutoLogon -NoInternetAccess
+    $Arguments["AutoLogon"] = $true
 }
+
+& .\$CustomRoleVersion.ps1 @Arguments -Branch "TP"
