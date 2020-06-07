@@ -3,6 +3,9 @@ Param (
     [Parameter(Mandatory)]
     [ValidateSet("CM-1902", "CM-2002")]
     [String]$CustomRoleVersion,
+    [Parameter(Mandatory)]
+    [ValidateSet("TP", "CB")]
+    [String]$Branch,
     [Switch]$ExcludePostInstall,
     [Switch]$PostInstallOnly,
     [Switch]$DoNotCopyFiles
@@ -39,4 +42,4 @@ else {
     $Arguments["AutoLogon"] = $true
 }
 
-& .\$CustomRoleVersion.ps1 @Arguments -Branch "TP"
+& .\$CustomRoleVersion.ps1 @Arguments -Branch $Branch
