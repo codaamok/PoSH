@@ -4,48 +4,60 @@ Function prompt {
     # .Link
     # https://go.microsoft.com/fwlink/?LinkID=225750
     # .ExternalHelp System.Management.Automation.dll-help.xml
-    if ($PSVersionTable.PSVersion -ge [System.Version]"6.0") {
-        Write-Host ('[{0}@{1}] [{2}] PS ' -f $env:USER, [System.Net.Dns]::GetHostName(), (Get-Date -Format "HH:mm:ss")) -NoNewline
-        Write-Host $executionContext.SessionState.Path.CurrentLocation -ForegroundColor "Green"
-        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
-        #Write-Host "[$env:USER@$Hostname] " -NoNewline
-    }
-    else {
-        $user = [Security.Principal.WindowsIdentity]::GetCurrent()
-        switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-            $true {
-                $adminfg = "red"
-            }
-            $false {
-                $adminfg = "white"
+
+    $adminfg = switch ($script:MyOS) {
+        "Windows" {
+            $user = [Security.Principal.WindowsIdentity]::GetCurrent()
+            switch ((New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
+                $true {
+                    "Red"
+                }
+                $false {
+                    "White"
+                }
             }
         }
-        switch ((Get-Location).Provider.Name) {
-            "FileSystem"    { $fg = "green"}
-            "Registry"      { $fg = "magenta"}
-            "wsman"         { $fg = "cyan"}
-            "Environment"   { $fg = "yellow"}
-            "Certificate"   { $fg = "darkcyan"}
-            "Function"      { $fg = "gray"}
-            "alias"         { $fg = "darkgray"}
-            "variable"      { $fg = "darkgreen"}
-            default         { $fg = $host.ui.rawui.ForegroundColor}
+        default {
+            "White"
         }
-        Write-Host "[$env:USERNAME@$env:COMPUTERNAME] " -NoNewline
-        Write-Host "[$(Get-Date -Format "HH:mm:ss")]" -NoNewline
-        Write-Host " PS " -NoNewline -ForegroundColor $adminfg
-        Write-Host "$($ExecutionContext.SessionState.Path.CurrentLocation)" -ForegroundColor $fg -NoNewline
-        Write-Output "$('>' * ($nestedPromptLevel + 1)) "
-        Write-Host "" 
     }
-}
-
-Function Get-HostName {
-
+    
+    switch ((Get-Location).Provider.Name) {
+        "FileSystem"    { $fg = "green"}
+        "Registry"      { $fg = "magenta"}
+        "wsman"         { $fg = "cyan"}
+        "Environment"   { $fg = "yellow"}
+        "Certificate"   { $fg = "darkcyan"}
+        "Function"      { $fg = "gray"}
+        "alias"         { $fg = "darkgray"}
+        "variable"      { $fg = "darkgreen"}
+        default         { $fg = $host.ui.rawui.ForegroundColor}
+    }
+    
+    Write-Host ("[{0}@{1}] " -f $script:MyUsername, [System.Net.Dns]::GetHostName()) -NoNewline
+    Write-Host ("[{0}]" -f (Get-Date -Format "HH:mm:ss")) -NoNewline
+    Write-Host " PS " -NoNewline -ForegroundColor $adminfg
+    Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor $fg
+    Write-Output ("{0} " -f ('>' * ($nestedPromptLevel + 1)))
 }
 
 Function Reset-CMClientPolicy {
-    Invoke-WmiMethod -Class SMS_Client -Namespace root\ccm -Name ResetPolicy -ArgumentList 1
+    param (
+        [CimSession]$CimSession
+    )
+
+    $InvokeCimMethodSplat = @{
+        ClassName    = "SMS_Client"
+        Namespace    = "root\ccm"
+        Name         = "ResetPolicy"
+        ArgumustList = 1
+    }   
+
+    if ($PSBoundParameters.ContainsKey("CimSession")) {
+        $InvokeCimMethodSplat["CimSession"] = $CimSession
+    }
+
+    Invoke-CimMethod @CimSession
 }
 
 function Show-JobProgress {
@@ -1198,12 +1210,9 @@ Function Get-Reboots {
 }
 
 Function Set-CMShortcuts { 
-    Param( 
-        [Parameter()]
-        [String]$ComputerName,
-        [Parameter()]
-        [PSCredential]$Credential
-    )
+    [Alias("setmeup")]
+    param ()
+
     Function Add-FileAssociation {
         <#
         .SYNOPSIS
@@ -2443,14 +2452,50 @@ function ConvertTo-ByteArrayString {
     }
 }
 
-Function Get-MyCommands {
-    Get-Content -Path $profile.CurrentUserAllHosts | Select-String -Pattern "^function.+" | ForEach-Object {
-        [Regex]::Matches($_, "^function ([a-z.-]+)","IgnoreCase").Groups[1].Value
-    } | Where-Object { $_ -ine "prompt" } | Sort-Object
+function Get-MyOS {
+    switch -Regex ($PSVersionTable.PSVersion) {
+        "^[6-7]" {
+            switch ($true) {
+                $IsLinux {
+                    "Linux"
+                }
+                $IsWindows {
+                    "Windows"
+                }
+            }
+        }
+        "^[1-5]" {
+            "Windows"
+        }
+    }
 }
 
-Set-Alias -Name "Get-MyFunctions" -Value "Get-MyCommands"
-Set-Alias -Name "setmeup" -Value "Set-CMShortcuts"
+function Get-Username {
+    param (
+        [String]$OS
+    )
+    if ($OS -eq "Windows") {
+        $env:USERNAME
+    }
+    else {
+        $env:USER
+    }
+}
+
+Function Get-MyCommands {
+    [Alias("Get-MyFunctions")]
+    param (
+        [String]$Profile = $PSCommandPath
+    )
+
+    Get-Content -Path $Profile | Select-String -Pattern "^function.+" | ForEach-Object {
+        $result = [Regex]::Matches($_, "^function ([a-z.-]+)","IgnoreCase").Groups[1].Value
+        if ($result -ne "prompt") { $result }
+    } | Sort-Object
+}
+
+$script:MyOS = Get-MyOS
+$script:MyUsername = Get-Username -OS $script:MyOS
 Set-Alias -Name "l" -Value "Get-ChildItem"
 
 Set-Location ([Environment]::GetFolderPath("MyDocuments"))
