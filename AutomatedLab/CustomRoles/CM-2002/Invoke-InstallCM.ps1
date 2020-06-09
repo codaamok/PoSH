@@ -166,10 +166,6 @@ function Install-CMSite {
         [ordered]@{
             "Title" = "Identification"
             "Action" = "InstallPrimarySite"
-            "Preview" = switch ($Branch) {
-                "TP" { "1" }
-                "CB" { "0" }
-            }
         }
 
         [ordered]@{
@@ -218,6 +214,11 @@ function Install-CMSite {
             "Title" = "HierarchyExpansionOption"
         }
     )
+
+    # The "Preview" key can not exist in the .ini at all if installing CB
+    if ($Branch -eq "TP") {
+        $CMSetupConfig.Where{$_.Title -eq "Identification"}[0]["Preview"] = 1
+    }
 
     $CMSetupConfigIni = "{0}\ConfigurationFile-CM.ini" -f $downloadTargetDirectory
     

@@ -12,22 +12,22 @@
     [String]$Branch
 )
 
-Write-ScreenInfo -Message "Starting CM binaries and prerequisites download process" -TaskStart
+Write-ScreenInfo -Message "Starting Configuration Manager and prerequisites download process" -TaskStart
 
 #region CM binaries
-Write-ScreenInfo -Message "Downloading CM binaries archive" -TaskStart
-
 $CMZipPath = "{0}\SoftwarePackages\{1}" -f $labSources, ((Split-Path $CMDownloadURL -Leaf) -replace "\.exe$", ".zip")
 
+Write-ScreenInfo -Message ("Downloading '{0}' to '{1}'" -f (Split-Path $CMZipPath -Leaf), (Split-Path $CMZipPath -Parent)) -TaskStart
+
 if (Test-Path -Path $CMZipPath) {
-    Write-ScreenInfo -Message ("CM binaries archive already exists, delete '{0}' if you want to download again" -f $CMZipPath)
+    Write-ScreenInfo -Message ("File already exists, skipping the download. Delete if you want to download again." -f (Split-Path $CMZipPath -Leaf))
 }
 
 try {
     $CMZipObj = Get-LabInternetFile -Uri $CMDownloadURL -Path (Split-Path -Path $CMZipPath -Parent) -FileName (Split-Path -Path $CMZipPath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
 }
 catch {
-    $Message = "Failed to download CM binaries archive from '{0}' ({1})" -f $CMDownloadURL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
+    $Message = "Failed to download from '{0}' ({1})" -f $CMDownloadURL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
     Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
     throw $Message
 }
@@ -36,7 +36,7 @@ Write-ScreenInfo -Message "Activity done" -TaskEnd
 #endregion
 
 #region Extract CM binaries
-Write-ScreenInfo -Message "Extracting CM binaries from archive" -TaskStart
+Write-ScreenInfo -Message ("Extracting '{0}' to '{1}'" -f (Split-Path $CMZipPath -Leaf), $CMBinariesDirectory) -TaskStart
 
 if (-not (Test-Path -Path $CMBinariesDirectory))
 {
@@ -51,14 +51,14 @@ if (-not (Test-Path -Path $CMBinariesDirectory))
 }
 else
 {
-    Write-ScreenInfo -Message ("CM directory already exists, skipping the download. Delete the directory '{0}' if you want to download again." -f $CMBinariesDirectory)
+    Write-ScreenInfo -Message ("Directory already exists, skipping the extraction. Delete the directory if you want to extract again." -f $CMBinariesDirectory)
 }
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd
 #endregion
 
 #region Download CM prerequisites
-Write-ScreenInfo -Message "Downloading CM prerequisites" -TaskStart
+Write-ScreenInfo -Message ("Downloading prerequisites to '{0}'" -f $CMPreReqsDirectory) -TaskStart
 
 switch ($Branch) {
     "CB" {
@@ -72,7 +72,7 @@ switch ($Branch) {
                 Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
                 throw $Message
             }
-            Write-ScreenInfo -Message "Waiting for CM prerequisites to finish downloading"
+            Write-ScreenInfo -Message "Downloading"
             while (-not $p.HasExited) {
                 Write-ScreenInfo '.' -NoNewLine
                 Start-Sleep -Seconds 10
@@ -81,7 +81,7 @@ switch ($Branch) {
         }
         else
         {
-            Write-ScreenInfo -Message ("CM prerequisites directory already exists, skipping the download. Delete the directory '{0}' if you want to download again." -f $CMPreReqsDirectory)
+            Write-ScreenInfo -Message ("Directory already exists, skipping the download. Delete the directory if you want to download again." -f $CMPreReqsDirectory)
         }        
     }
     "TP" {
