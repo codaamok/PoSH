@@ -2494,8 +2494,37 @@ Function Get-MyCommands {
     } | Sort-Object
 }
 
+function Install-Choco {
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+}
+
+function Get-MyChocoPackages {
+    param (
+        [String[]]$Exclude,
+        [Switch]$IncludeDellUpdate
+    )
+    $Packages = @(
+        "Everything"
+        "powertoys"
+        "git"
+        "vscode"
+        "7zip"
+        "pwsh"
+        "royalts-v5"
+        "discord"
+        "GoogleChrome"
+        "microsoft-edge"
+        "ditto"
+    )
+    if ((Get-CimInstance -ClassName "Win32_ComputerSystem").Manufacturer -match "dell" -Or $IncludeDellUpdate.IsPresent) {
+        $Packages += "dell-update"
+    }
+    $Packages | Where-Object { $Exclude -notcontains $_ }
+}
+
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
+
 Set-Alias -Name "l" -Value "Get-ChildItem"
 
 Set-Location ([Environment]::GetFolderPath("MyDocuments"))
