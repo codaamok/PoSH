@@ -2515,6 +2515,7 @@ function Get-MyChocoPackages {
         "GoogleChrome"
         "microsoft-edge"
         "ditto"
+        "obs-studio"
     )
     if ((Get-CimInstance -ClassName "Win32_ComputerSystem").Manufacturer -match "dell" -Or $IncludeDellUpdate.IsPresent) {
         $Packages += "dell-update"
