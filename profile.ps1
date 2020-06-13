@@ -2513,11 +2513,14 @@ function Get-MyChocoPackages {
         "pwsh"
         "royalts-v5"
         "discord"
+        "slack"
+        "whatsapp"
         "GoogleChrome"
         "microsoft-edge"
         "microsoft-windows-terminal"
         "ditto"
         "obs-studio"
+        "cue"
     )
     if ((Get-CimInstance -ClassName "Win32_ComputerSystem").Manufacturer -match "dell" -Or $IncludeDellUpdate.IsPresent) {
         $Packages += "dell-update"
