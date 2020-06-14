@@ -2536,3 +2536,10 @@ $script:MyUsername = Get-Username -OS $script:MyOS
 Set-Alias -Name "l" -Value "Get-ChildItem"
 
 Set-Location ([Environment]::GetFolderPath("MyDocuments"))
+
+if ((Get-Module PSProfile -ListAvailable).Name -contains "PSProfile") {
+    Import-Module "PSProfile" -ErrorAction "Continue"
+}
+else {
+    Write-Warning "PSProfile module not installed"
+}
