@@ -21,7 +21,7 @@ Function prompt {
             "White"
         }
     }
-    
+
     switch ((Get-Location).Provider.Name) {
         "FileSystem"    { $fg = "green"}
         "Registry"      { $fg = "magenta"}
@@ -33,12 +33,12 @@ Function prompt {
         "variable"      { $fg = "darkgreen"}
         default         { $fg = $host.ui.rawui.ForegroundColor}
     }
-    
-    Write-Host ("[{0}@{1}] " -f $script:MyUsername, [System.Net.Dns]::GetHostName()) -NoNewline
+
+    Write-Host ("[{0}@{1}] " -f $global:MyUsername, [System.Net.Dns]::GetHostName()) -NoNewline
     Write-Host ("[{0}]" -f (Get-Date -Format "HH:mm:ss")) -NoNewline
     Write-Host " PS " -NoNewline -ForegroundColor $adminfg
     Write-Host $ExecutionContext.SessionState.Path.CurrentLocation -ForegroundColor $fg
-    Write-Output ("{0} " -f ('>' * ($nestedPromptLevel + 1)))
+    Write-Output ("{0} " -f (">" * ($nestedPromptLevel + 1)))
 }
 
 Function Reset-CMClientPolicy {
@@ -2523,6 +2523,7 @@ function Get-MyChocoPackages {
         "cue"
         "snagit"
         "eddie"
+        "altdrag"
     )
     if ((Get-CimInstance -ClassName "Win32_ComputerSystem").Manufacturer -match "dell" -Or $IncludeDellUpdate.IsPresent) {
         $Packages += "dell-update"
