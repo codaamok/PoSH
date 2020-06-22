@@ -2436,6 +2436,90 @@ function ConvertTo-ByteArrayHex {
     }
 }
 
+function ConvertTo-Ini {
+    param (
+        [Object[]]$Content,
+        [String]$SectionTitleKeyName
+    )
+    begin {
+        $StringBuilder = [System.Text.StringBuilder]::new()
+        $SectionCounter = 0
+    }
+    process {
+        foreach ($ht in $Content) {
+            $SectionCounter++
+
+            if ($ht -is [System.Collections.Specialized.OrderedDictionary] -Or $ht -is [hashtable]) {
+                if ($ht.Keys -contains $SectionTitleKeyName) {
+                    $null = $StringBuilder.AppendFormat("[{0}]", $ht[$SectionTitleKeyName])
+                }
+                else {
+                    $null = $StringBuilder.AppendFormat("[Section {0}]", $SectionCounter)
+                }
+
+                $null = $StringBuilder.AppendLine()
+
+                foreach ($key in $ht.Keys) {
+                    if ($key -ne $SectionTitleKeyName) {
+                        $null = $StringBuilder.AppendFormat("{0}={1}", $key, $ht[$key])
+                        $null = $StringBuilder.AppendLine()
+                    }
+                }
+
+                $null = $StringBuilder.AppendLine()
+            }
+        }
+    }
+    end {
+        $StringBuilder.ToString(0, $StringBuilder.Length-4)
+    }
+}
+
+function Set-GitConfig {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)]
+        [String]$WorkEmail,
+        [Parameter(Mandatory)]
+        [String]$PersonalEmail,
+        [Parameter()]
+        [String]$gitconfig = "{0}\.gitconfig" -f $env:HOME,
+        [Parameter()]
+        [String]$gitconfigwork = "{0}\.gitconfig-work" -f $env:HOME,
+        [Parameter()]
+        [String]$gitconfigpersonal = "{0}\.gitconfig-personal" -f $env:HOME
+    )
+
+    $content = @(
+        [ordered]@{
+            "title" = "includeIf `"gitdir/i:C:/gitpersonal/`""
+            "path" = Split-Path $gitconfigpersonal -Leaf
+        },
+        [ordered]@{
+            "title" = "includeIf `"gitdir/i:C:/gitwork/`""       
+            "path" = Split-Path $gitconfigwork -Leaf
+        }
+    )
+
+    ConvertTo-Ini -Content $content -SectionTitleKeyName "title" | Add-Content -Path $gitconfig -Force
+
+    $content = [ordered]@{
+        "title" = "user"
+        "name" = "Adam Cook"
+        "email" = $WorkEmail
+    }
+
+    ConvertTo-Ini -Content $content -SectionTitleKeyName "title" | Set-Content -Path $gitconfigwork -Force
+    
+    $content = [ordered]@{
+        "title" = "user"
+        "name" = "Adam Cook"
+        "email" = $PersonalEmail
+    }
+
+    ConvertTo-Ini -Content $content -SectionTitleKeyName "title" | Set-Content -Path $gitconfigpersonal -Force
+}
+
 function Import-CMModule {
     Import-Module ("{0}\..\ConfigurationManager.psd1" -f $ENV:SMS_ADMIN_UI_PATH)
 }
