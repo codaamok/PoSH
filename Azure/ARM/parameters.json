@@ -79,9 +79,6 @@
         "adminPublicKey": {
             "value": null
         },
-        "autoShutdownStatus": {
-            "value": "Enabled"
-        },
         "autoShutdownTime": {
             "value": "19:00"
         },

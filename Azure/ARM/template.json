@@ -29,12 +29,6 @@
         "publicIpAddressName": {
             "type": "string"
         },
-        "publicIpAddressType": {
-            "type": "string"
-        },
-        "publicIpAddressSku": {
-            "type": "string"
-        },
         "virtualMachineName": {
             "type": "string"
         },
@@ -44,13 +38,7 @@
         "virtualMachineRG": {
             "type": "string"
         },
-        "osDiskType": {
-            "type": "string"
-        },
         "virtualMachineSize": {
-            "type": "string"
-        },
-        "adminUsername": {
             "type": "string"
         },
         "adminPublicKey": {
@@ -147,10 +135,10 @@
             "apiVersion": "2019-02-01",
             "location": "[parameters('location')]",
             "properties": {
-                "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+                "publicIpAllocationMethod": "Dynamic"
             },
             "sku": {
-                "name": "[parameters('publicIpAddressSku')]"
+                "name": "Basic"
             },
             "tags": {
                 "environment": "homelab"
@@ -172,7 +160,7 @@
                     "osDisk": {
                         "createOption": "fromImage",
                         "managedDisk": {
-                            "storageAccountType": "[parameters('osDiskType')]"
+                            "storageAccountType": "Premium_LRS"
                         }
                     },
                     "imageReference": {
@@ -191,13 +179,13 @@
                 },
                 "osProfile": {
                     "computerName": "[parameters('virtualMachineComputerName')]",
-                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminUsername": "acc",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": true,
                         "ssh": {
                             "publicKeys": [
                                 {
-                                    "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                                    "path": "/home/acc/.ssh/authorized_keys",
                                     "keyData": "[parameters('adminPublicKey')]"
                                 }
                             ]
@@ -238,9 +226,5 @@
         }
     ],
     "outputs": {
-        "adminUsername": {
-            "type": "string",
-            "value": "[parameters('adminUsername')]"
-        }
     }
 }
