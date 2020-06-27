@@ -33,6 +33,9 @@ param (
     [String]$SubscriptionId,
 
     [Parameter()]
+    [Switch]$ValueOnly,
+
+    [Parameter()]
     [String]$APIVersion = "7.0"
 )
 
