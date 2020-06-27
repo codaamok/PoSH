@@ -8,6 +8,8 @@
     
     Gets secret value for secret "ScretName" within key vault "MyVault" within tenant "3882fa5f-e633-458d-b2a5-faf30be63e2a" and subscription "0375a967-1c42-4613-9d5f-085a011c1674" using authentication with client id "34b3aff5-bc13-427c-8198-6c73255798de" and client secret "asdasfaFsad32e23eASD#'#~~"
 .NOTES
+    https://docs.microsoft.com/en-us/rest/api/azure/
+    https://docs.microsoft.com/en-us/rest/api/keyvault/
     Author: Adam Cook
 #>
 [CmdletBinding()]
