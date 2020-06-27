@@ -51,6 +51,9 @@ param (
     [String]$SubscriptionId = (Get-Secure "AzureARMnginxSASToken").UserName,
 
     [Parameter()]
+    [PSCredential]$AzureApp = (Get-Secure "AzureARMnginxKeyVaultAPIClientSecret"),
+
+    [Parameter()]
     [String]$AzureTenantId = "cf7d21a4-6f74-4b08-8b68-89b756ecd52e"
 )
 
@@ -77,8 +80,6 @@ $FullChain = (Get-Content -Path "C:\Users\acc\OneDrive - Adam Cook\Documents\pro
 $null = Set-AzKeyVaultSecret -VaultName $KeyVault.VaultName -Name "codaamok-net-fullchain-pem" -SecretValue (ConvertTo-SecureString -String $FullChain -AsPlainText -Force)
 $PrivateKey = (Get-Content -Path "C:\Users\acc\OneDrive - Adam Cook\Documents\projects\azure-learning\codaamok.net-privkey.pem" -ErrorAction "Stop") -join "`n"
 $null = Set-AzKeyVaultSecret -VaultName $KeyVault.VaultName -Name "codaamok-net-privkey-pem" -SecretValue (ConvertTo-SecureString -String $PrivateKey -AsPlainText -Force)
-
-$AzureApp = Get-Secure "AzureARMnginxKeyVaultAPIClientSecret"
 
 #region Create cloud-init file
 # It's probably a really bad idea to pass secrets like this to a yaml file, which is probably save on disk in the VM, or at least logged somewhere in some log file when executed
