@@ -45,14 +45,23 @@ param (
     [String]$VNetAddressPrefix = "192.168.0.0/16",
 
     [Parameter()]
-    [String[]]$NSGAllowedIPs = (Invoke-RestMethod -Uri "https://ipinfo.io/json" -Headers @{"Authorisation" = "Bearer {0}" -f (Get-Secure "IPInfo").GetNetworkCredential().Password} | Select-Object -ExpandProperty ip)
+    [String[]]$NSGAllowedIPs = (Invoke-RestMethod -Uri "https://ipinfo.io/json" -Headers @{"Authorisation" = "Bearer {0}" -f (Get-Secure "IPInfo").GetNetworkCredential().Password} | Select-Object -ExpandProperty ip),
+
+    [Parameter()]
+    [String]$SubscriptionId = (Get-Secure "AzureARMnginxKeyVaultAPIClientSecret").UserName,
+
+    [Parameter()]
+    [String]$AzureAppClientId = "75d7f664-4521-4263-8137-3cb22ec0faa2",
+
+    [Parameter()]
+    [String]$AzureTenantId = "cf7d21a4-6f74-4b08-8b68-89b756ecd52e"
 )
 
 $VerbosePreference = "Continue"
 
 $AzContext = Get-AzContext
 
-if ($AzContext.Subscription.Name -notlike "Visual Studio Enterprise – MPN*") {
+if ($AzContext.Subscription.Name -notlike "*$SubscriptionId*") {
     throw "Please change your current subscription"
 }
 
