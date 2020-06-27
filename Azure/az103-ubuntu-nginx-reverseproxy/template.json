@@ -20,7 +20,7 @@
         "virtualNetworkName": {
             "type": "string"
         },
-        "addressPrefixes": {
+        "vnetAddressPrefixes": {
             "type": "array"
         },
         "subnets": {
@@ -60,6 +60,15 @@
             "type": "string"
         },
         "autoShutdownNotificationEmail": {
+            "type": "string"
+        },
+        "blobStorageUrl": {
+            "type": "string"
+        },
+        "blobStorageSASToken": {
+            "type": "secureString"
+        },
+        "cloudinitCustomData": {
             "type": "string"
         }
     },
@@ -121,7 +130,7 @@
             "location": "[parameters('location')]",
             "properties": {
                 "addressSpace": {
-                    "addressPrefixes": "[parameters('addressPrefixes')]"
+                    "addressPrefixes": "[parameters('vnetAddressPrefixes')]"
                 },
                 "subnets": "[parameters('subnets')]"
             },
@@ -190,7 +199,8 @@
                                 }
                             ]
                         }
-                    }
+                    },
+                    "customData": "[base64(parameters('cloudinitCustomData'))]"
                 }
             },
             "tags": {
