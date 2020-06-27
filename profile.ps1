@@ -2483,11 +2483,11 @@ function Set-GitConfig {
         [Parameter(Mandatory)]
         [String]$PersonalEmail,
         [Parameter()]
-        [String]$gitconfig = "{0}\.gitconfig" -f $env:HOME,
+        [String]$gitconfig = "{0}\.gitconfig" -f $HOME,
         [Parameter()]
-        [String]$gitconfigwork = "{0}\.gitconfig-work" -f $env:HOME,
+        [String]$gitconfigwork = "{0}\.gitconfig-work" -f $HOME,
         [Parameter()]
-        [String]$gitconfigpersonal = "{0}\.gitconfig-personal" -f $env:HOME
+        [String]$gitconfigpersonal = "{0}\.gitconfig-personal" -f $HOME
     )
 
     $content = @(
@@ -2513,7 +2513,7 @@ function Set-GitConfig {
     
     $content = [ordered]@{
         "title" = "user"
-        "name" = "Adam Cook"
+        "name" = "codaamok"
         "email" = $PersonalEmail
     }
 

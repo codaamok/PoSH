@@ -318,8 +318,12 @@ function Install-CMSite {
     #region Saving NO_SMS_ON_DRIVE.SMS file on C: and F:
     Write-ScreenInfo -Message "Saving NO_SMS_ON_DRIVE.SMS file on C: and F:" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Place NO_SMS_ON_DRIVE.SMS file on C: and F:" -ScriptBlock {
-        New-Item -Path "C:\" -Name "NO_SMS_ON_DRIVE.SMS" -ItemType "File" -ErrorAction "Stop"
-        New-Item -Path "F:\" -Name "NO_SMS_ON_DRIVE.SMS" -ItemType "File" -ErrorAction "Stop"
+        foreach ($drive in "C:","F:") {
+            $Path = "{0}\NO_SMS_ON_DRIVE_.SMS" -f $drive
+            if (-not (Test-Path $Path)) {
+                New-Item -Path $Path -ItemType "File" -ErrorAction "Stop"
+            }
+        }
     }
     Wait-LWLabJob -Job $job
     try {
