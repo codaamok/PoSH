@@ -61,7 +61,7 @@ $VerbosePreference = "Continue"
 
 $AzContext = Get-AzContext
 
-if ($AzContext.Subscription.Name -notlike "*$SubscriptionId*") {
+if ($AzContext.Subscription.Id -ne $SubscriptionId) {
     throw "Please change your current subscription"
 }
 
