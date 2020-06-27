@@ -33,9 +33,6 @@ param (
     [String]$SubscriptionId,
 
     [Parameter()]
-    [Switch]$ValueOnly,
-
-    [Parameter()]
     [String]$APIVersion = "7.0"
 )
 
@@ -74,11 +71,4 @@ $Headers = @{
     "Authorization" = "{0} {1}" -f $AccessToken.token_type, $AccessToken.access_token
 }
 
-$result = Invoke-RestMethod -Method "GET" -Uri $Uri -Headers $Headers
-
-if ($ValueOnly.IsPresent) {
-    $result.value
-}
-else {
-    $result
-}
+Invoke-RestMethod -Method "GET" -Uri $Uri -Headers $Headers
