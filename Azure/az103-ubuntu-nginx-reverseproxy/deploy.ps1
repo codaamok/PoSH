@@ -48,10 +48,7 @@ param (
     [String[]]$NSGAllowedIPs = (Invoke-RestMethod -Uri "https://ipinfo.io/json" -Headers @{"Authorisation" = "Bearer {0}" -f (Get-Secure "IPInfo").GetNetworkCredential().Password} | Select-Object -ExpandProperty ip),
 
     [Parameter()]
-    [String]$SubscriptionId = (Get-Secure "AzureARMnginxKeyVaultAPIClientSecret").UserName,
-
-    [Parameter()]
-    [String]$AzureAppClientId = "75d7f664-4521-4263-8137-3cb22ec0faa2",
+    [String]$SubscriptionId = (Get-Secure "AzureARMnginxSASToken").UserName,
 
     [Parameter()]
     [String]$AzureTenantId = "cf7d21a4-6f74-4b08-8b68-89b756ecd52e"
@@ -81,7 +78,10 @@ $null = Set-AzKeyVaultSecret -VaultName $KeyVault.VaultName -Name "codaamok-net-
 $PrivateKey = (Get-Content -Path "C:\Users\acc\OneDrive - Adam Cook\Documents\projects\azure-learning\codaamok.net-privkey.pem" -ErrorAction "Stop") -join "`n"
 $null = Set-AzKeyVaultSecret -VaultName $KeyVault.VaultName -Name "codaamok-net-privkey-pem" -SecretValue (ConvertTo-SecureString -String $PrivateKey -AsPlainText -Force)
 
+$AzureApp = Get-Secure "AzureARMnginxKeyVaultAPIClientSecret"
+
 #region Create cloud-init file
+# It's probably a really bad idea to pass secrets like this to a yaml file, which is probably save on disk in the VM, or at least logged somewhere in some log file when executed
 $yaml = @{
     "package_upgrade" = $true
     "packages" = @(
@@ -98,8 +98,9 @@ $yaml = @{
         "curl 'https://{0}.blob.core.windows.net/{1}/lb.codaamok.net{2}' --create-dirs -o /etc/nginx/sites-available/lb.codaamok.net" -f $StorageAccountName, $ContainerName, $SASToken.GetNetworkCredential().Password
         'ln -f -s /etc/nginx/sites-available/lb.codaamok.net /etc/nginx/sites-enabled/default'
         "echo ADAM COOK: get nginx certificates"
-        "curl 'https://{0}.blob.core.windows.net/{1}/codaamok.net-fullchain.pem{2}' --create-dirs -o /etc/letsencrypt/live/codaamok.net/fullchain.pem" -f $StorageAccountName, $ContainerName, $SASToken.GetNetworkCredential().Password
-        "curl 'https://{0}.blob.core.windows.net/{1}/codaamok.net-privkey.pem{2}' --create-dirs -o /etc/letsencrypt/live/codaamok.net/privkey.pem" -f $StorageAccountName, $ContainerName, $SASToken.GetNetworkCredential().Password
+        "curl 'https://raw.githubusercontent.com/codaamok/PoSH/master/Azure/Get-AzAPIKeyVaultSecret.ps1' -o Get-AzAPIKeyVaultSecret.ps1"
+        "pwsh -Command '& { ./Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-fullchain-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value }' >> /etc/letsencrypt/live/codaamok.net/fullchain.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
+        "pwsh -Command '& { ./Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-privkey-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value }' >> /etc/letsencrypt/live/codaamok.net/privkey.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
         "echo ADAM COOK: set certificate permissions"
         "chmod 600 /etc/letsencrypt/live/codaamok.net/fullchain.pem /etc/letsencrypt/live/codaamok.net/privkey.pem"
         "echo ADAM COOK: create nginx root index file"
