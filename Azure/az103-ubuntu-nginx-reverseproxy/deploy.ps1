@@ -11,9 +11,6 @@
 #>
 [CmdletBinding()]
 param (
-    [Parameter()]    
-    [DateTime]$Date = (Get-Date),
-
     [Parameter()]
     [String]$Location = "uksouth",
 
@@ -57,6 +54,7 @@ param (
     [String]$AzureTenantId = "cf7d21a4-6f74-4b08-8b68-89b756ecd52e"
 )
 
+$OriginalVerbosePreference = $VerbosePreference
 $VerbosePreference = "Continue"
 
 $AzContext = Get-AzContext
@@ -65,8 +63,17 @@ if ($AzContext.Subscription.Id -ne $SubscriptionId) {
     throw "Please change your current subscription"
 }
 
-$RGName = "rg-keyvault-lab-001"
+$Date = (Get-Date)
 
+#region Verify Azure App exists
+Write-Verbose ("Getting Azure AD Application '{0}'" -f $AzureApp.UserName)
+$AzureAppObj = Get-AzADApplication -ApplicationId $AzureApp.UserName -ErrorAction "Stop"
+if ($null -eq $AzureApp) {
+    throw ("Could not find Azure Application '{0}'" -f $AzureApp.UserName)
+}
+#endregion
+
+$RGName = "rg-keyvault-lab-001"
 Write-Verbose "Creating resource group $RGName"
 $RG = New-AzResourceGroup -Name $RGName -Location $Location
 
@@ -74,6 +81,11 @@ if (-not (Get-AzKeyVault -VaultName $KeyVaultName)) {
     Write-Verbose "Creating key vault"
     $KeyVault = New-AzKeyVault -Name $KeyVaultName -ResourceGroupName $RG.ResourceGroupName -Location $Location -DisableSoftDelete
 }
+
+#region Grant Azure Application permissions to the key vault
+Write-Verbose ("Delegating Azure AD Appliation '{0}' permissions to key vault '{1}'" -f $AzureAppObj.ApplicationId, $KeyVault.VaultName)
+Set-AzKeyVaultAccessPolicy -VaultName $KeyVault.VaultName -ResourceGroupName $RG.ResourceGroupName -ServicePrincipalName $AzureAppObj.ApplicationId -PermissionsToSecrets get,list -ErrorAction "Stop"
+#endregion
 
 Write-Verbose "Stashing codaamok.net certificates to key vault"
 $FullChain = (Get-Content -Path "C:\Users\acc\OneDrive - Adam Cook\Documents\projects\azure-learning\codaamok.net-fullchain.pem" -ErrorAction "Stop") -join "`n"
@@ -100,8 +112,9 @@ $yaml = @{
         'ln -f -s /etc/nginx/sites-available/lb.codaamok.net /etc/nginx/sites-enabled/default'
         "echo ADAM COOK: get nginx certificates"
         "curl 'https://raw.githubusercontent.com/codaamok/PoSH/master/Azure/Get-AzAPIKeyVaultSecret.ps1' -o Get-AzAPIKeyVaultSecret.ps1"
-        "pwsh -Command '& { ./Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-fullchain-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value }' >> /etc/letsencrypt/live/codaamok.net/fullchain.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
-        "pwsh -Command '& { ./Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-privkey-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value }' >> /etc/letsencrypt/live/codaamok.net/privkey.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
+        "mkdir -p /etc/letsencrypt/live/codaamok.net"
+        "pwsh -Command './Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-fullchain-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value' >> /etc/letsencrypt/live/codaamok.net/fullchain.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
+        "pwsh -Command './Get-AzAPIKeyVaultSecret.ps1 -KeyVaultName {0} -SecretName codaamok-net-privkey-pem -TenantId {1} -ClientId {2} -ClientSecret {3} -SubscriptionId {4} | Select-Object -ExpandProperty value' >> /etc/letsencrypt/live/codaamok.net/privkey.pem" -f $KeyVault.VaultName, $AzureTenantId, $AzureApp.UserName, $AzureApp.GetNetworkCredential().Password, $SubscriptionId
         "echo ADAM COOK: set certificate permissions"
         "chmod 600 /etc/letsencrypt/live/codaamok.net/fullchain.pem /etc/letsencrypt/live/codaamok.net/privkey.pem"
         "echo ADAM COOK: create nginx root index file"
@@ -290,3 +303,5 @@ foreach ($item in $Lowest..$Highest) {
 
     Remove-Item $ArmTemplateParameters -Force
 }
+
+$VerbosePreference = $OriginalVerbosePreference
