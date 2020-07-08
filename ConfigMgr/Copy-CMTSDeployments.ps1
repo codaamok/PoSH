@@ -7,12 +7,9 @@ function Copy-CMTSDeployments {
         
         Gathers all deployments from task sequence ABC0037A and deploys them to ABC004EA, excluding ABC0133F and ABC01340.
     .NOTES
-        Author: Adam Cook
-        Contact: @codaamok
-        Created: 2018-10-25
-        Updated: 2020-01-21
+        Author: Adam Cook @codaamok
     #>
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding()]
     #Requires -Module ConfigurationManager
     Param (
         [Parameter(Mandatory)]
@@ -25,14 +22,11 @@ function Copy-CMTSDeployments {
         [String[]]$ExcludeCollections
     )
 
-    ForEach ($TS in @($taskSequenceId_old, $taskSequenceId_new)) {
+    foreach ($TS in @($taskSequenceId_old, $taskSequenceId_new)) {
         if (-not(Get-CMTaskSequence -TaskSequencePackageId $TS)) {
             throw ("Task sequence '{0}' not found" -f $TS)
         }
     }
-
-    # Example way to create simple datetime object to populate $Date
-    # $Date = Get-Date -Year 2020 -Month 01 -Day 21 -Hour 12 -Minute 0 -Second 0
 
     $collectionIds = Get-CMTaskSequenceDeployment -TaskSequenceId $taskSequenceId_old | Select-Object -ExpandProperty CollectionId 
 
@@ -40,11 +34,12 @@ function Copy-CMTSDeployments {
 
     $Comment = "Created by user {0} on {1}" -f $env:username, (Get-Date).ToString()
 
-    ForEach ($collection in $collectionIds) { 
+    foreach ($collection in $collectionIds) { 
         if ($ExcludeCollections -contains $collection) {
             Write-Output ("Excluded: '{0}'" -f $collection)
             continue
         }
+
         $HashArguments = @{
             CollectionId                = $collection
             TaskSequencePackageId       = $taskSequenceId_new
@@ -62,18 +57,20 @@ function Copy-CMTSDeployments {
             DeploymentOption            = "DownloadContentLocallyWhenNeededByRunningTaskSequence"
             AllowSharedContent          = $false
             AllowFallback               = $false
-            AvailableDateTime           = $Date
+            AvailableDateTime           = $Date.AddDays(-1)
             UseMeteredNetwork           = $false
             PersistOnWriteFilterDevice  = $true
             SendWakeupPacket            = $false
             ErrorAction                 = "Stop"
             WhatIf                      = $WhatIfPreference
         }
+
         try {
             New-CMTaskSequenceDeployment @HashArguments | Out-Null
             Write-Output ("Success: {0}" -f $collection)
         }
         catch {
+            Write-Error -ErrorRecord $_
             Write-Output ("Failed: {0}" -f $collection)
         }
     }
