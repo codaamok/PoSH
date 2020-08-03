@@ -74,7 +74,7 @@ function Compare-Hashtable {
         }
     }
 
-    $Results = $Left.Keys | ForEach-Object {
+    $Results = @($Left.Keys | ForEach-Object {
         if ($Left.ContainsKey($_) -and -not $Right.ContainsKey($_)) {
             New-Result $_ $Left[$_] "<=" $Null
         } else {
@@ -87,12 +87,14 @@ function Compare-Hashtable {
                 New-Result $_ $LValue "==" $RValue
             }
         }
-    }
-    $Results += $Right.Keys | ForEach-Object {
+    })
+
+    $Results += @($Right.Keys | ForEach-Object {
         if (-not $Left.ContainsKey($_) -and $Right.ContainsKey($_)) {
             New-Result $_ $Null "=>" $Right[$_]
         } 
-    }
+    })
+    
     $Results 
 }
 
