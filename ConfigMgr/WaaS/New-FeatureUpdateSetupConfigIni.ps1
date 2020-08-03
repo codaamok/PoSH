@@ -231,7 +231,7 @@ function Export-IniFile {
         }
 
         #Write $Content to the SetupConfig.ini file
-        New-Item -Path $File -ItemType "File" -Force -ErrorAction "Stop"
+        $null = New-Item -Path $File -ItemType "File" -Force -ErrorAction "Stop"
         $NewContent | Set-Content -Path $File -Force -ErrorAction "Stop"
     }
     catch {
