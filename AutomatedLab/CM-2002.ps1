@@ -501,7 +501,7 @@ else {
                 "https://download.microsoft.com/download/e/0/a/e0a2dd5e-2b96-47e7-9022-3030f8a1807b/MEM_Configmgr_2002.exe"
             }
             "TP" { 
-                "https://download.microsoft.com/download/D/8/E/D8E795CE-44D7-40B7-9067-D3D1313865E5/Configmgr_TechPreview2002.exe"
+                "https://download.microsoft.com/download/D/8/E/D8E795CE-44D7-40B7-9067-D3D1313865E5/Configmgr_TechPreview2007.exe"
             }
         }
         ADKDownloadURL      = $ADKDownloadUrl
