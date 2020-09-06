@@ -128,6 +128,13 @@ $yaml = @{
 }
 #endregion
 
+#region Create virtual network and subnets
+foreach ($item in $Lowest..$Highest) {
+    $SubnetName          = "snet-lab-{0}-{0:D3}" -f $Location, $item
+    $SubnetAddressPrefix = "192.168.10{0}.0/24" -f $item
+}
+#endregion
+
 foreach ($item in $Lowest..$Highest) {
     #region Name resources
     # https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/naming-and-tagging#example-names

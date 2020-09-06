@@ -1,0 +1,7 @@
+☐ pass secrets from vault as parameters via ID from vault instead of decrypting pscredential object: https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/key-vault-parameter?tabs=azure-cli
+☐ create virtual network from template
+    ☐ create dynamic number of subnets within template
+    ☐ remote vnet creation from vm-template.json, just the configuration of using an existing one
+    ☐ maybe use outputs?
+☐ create lb from template
+☐ dynamically create x numb

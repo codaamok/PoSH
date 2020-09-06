@@ -1,0 +1,44 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualNetworkAddressSpaces": {
+            "type": "array",
+            "defaultValue": [
+                "192.168.1.0/24",
+                "192.168.2.0/24",
+                "192.168.3.0/24"
+            ]
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "name": "[concat('vnet-', copyIndex('vnetloop', 1))]",
+            "type": "Microsoft.Network/VirtualNetworks",
+            "apiVersion": "2019-09-01",
+            "location": "uksouth",
+            "dependsOn": [],
+            "tags": {},
+            "copy": {
+                "name": "vnetloop",
+                "count": "[length(parameters('virtualNetworkAddressSpaces'))]"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('virtualNetworkAddressSpaces')[copyIndex('vnetloop')]]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "subnet0",
+                        "properties": {
+                            "addressPrefix": "[parameters('virtualNetworkAddressSpaces')[copyIndex('vnetloop')]]"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
