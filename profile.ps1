@@ -117,8 +117,6 @@ function Get-Username {
     }
 }
 
-
-
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
 
