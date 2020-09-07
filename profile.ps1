@@ -87,6 +87,38 @@ else {
     Update-ProfileModule
 }
 
+function Get-MyOS {
+    switch -Regex ($PSVersionTable.PSVersion) {
+        "^[6-7]" {
+            switch ($true) {
+                $IsLinux {
+                    "Linux"
+                }
+                $IsWindows {
+                    "Windows"
+                }
+            }
+        }
+        "^[1-5]" {
+            "Windows"
+        }
+    }
+}
+
+function Get-Username {
+    param (
+        [String]$OS
+    )
+    if ($OS -eq "Windows") {
+        $env:USERNAME
+    }
+    else {
+        $env:USER
+    }
+}
+
+
+
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
 
