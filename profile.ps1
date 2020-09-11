@@ -119,7 +119,6 @@ function Get-Username {
 
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
+$script:mydocs = [Environment]::GetFolderPath("MyDocuments")
 
 Set-Alias -Name "l" -Value "Get-ChildItem"
-
-Set-Location ([Environment]::GetFolderPath("MyDocuments"))
