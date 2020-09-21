@@ -70,7 +70,7 @@ try {
         $SiteCode = Get-CimInstance -ComputerName $SiteServer -ClassName SMS_ProviderLocation -Namespace "ROOT\SMS" | Select-Object -ExpandProperty SiteCode
         if ($SiteCode.count -gt 1) {
             $Message = "Found multiple site codes: {0}" -f ($SiteCode -join ", ")
-            Write-Error -Message $Message -ErrorCategory "InvalidOperation" -ErrorAction "Stop"
+            Write-Error -Message $Message -Category "InvalidOperation" -ErrorAction "Stop"
         }
         else {
             Write-Verbose -Message ("Found site code: {0}" -f $SiteCode)
@@ -80,7 +80,7 @@ try {
 catch {
     Write-Error -ErrorRecord $_
     $Message = "Could not determine site code, please provide it using the -SiteCode parameter"
-    Write-Error -Message $Message -ErrorCategory $_.CategoryInfo.Category -ErrorAction "Stop"
+    Write-Error -Message $Message -Category $_.CategoryInfo.Category -ErrorAction "Stop"
 }
 
 $Namespace = "root/sms/site_{0}" -f $SiteCode
