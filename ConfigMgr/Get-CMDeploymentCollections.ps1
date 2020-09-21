@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Get all ConfgMgr active deployments and understand the size of the collections they're deployed to.
+    Get all ConfigMgr active deployments and understand the size of the collections they're deployed to.
 .DESCRIPTION
-    Get all ConfgMgr active deployments and understand the size of the collections they're deployed to.
+    Get all ConfigMgr active deployments and understand the size of the collections they're deployed to. For Applications, ObjectID is always CI_ID.
 .EXAMPLE
-    PS C:\> Get-CMDeploymentCollections -SiteServer "primary.contoso.com" -SiteCode "ABC"
+    PS C:\> Get-CMDeploymentCollections.ps1 -SiteServer "primary.contoso.com"
     
     ObjectName     : OSD - Modular OSD - Production
     ObjectType     : TaskSequence
@@ -36,7 +36,7 @@
 #>
 [CmdletBinding()]
 param (
-    [Parameter()]
+    [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [String]$SiteServer,
 
@@ -65,6 +65,24 @@ enum SMS_DeploymentSummary_CollectionType {
     DeviceCollection
 }
 
+try {
+    if (-not $PSBoundParameters.ContainsKey("SiteCode")) {
+        $SiteCode = Get-CimInstance -ComputerName $SiteServer -ClassName SMS_ProviderLocation -Namespace "ROOT\SMS" | Select-Object -ExpandProperty SiteCode
+        if ($SiteCode.count -gt 1) {
+            $Message = "Found multiple site codes: {0}" -f ($SiteCode -join ", ")
+            Write-Error -Message $Message -ErrorCategory "InvalidOperation" -ErrorAction "Stop"
+        }
+        else {
+            Write-Verbose -Message ("Found site code: {0}" -f $SiteCode)
+        }    
+    }
+}
+catch {
+    Write-Error -ErrorRecord $_
+    $Message = "Could not determine site code, please provide it using the -SiteCode parameter"
+    Write-Error -Message $Message -ErrorCategory $_.CategoryInfo.Category -ErrorAction "Stop"
+}
+
 $Namespace = "root/sms/site_{0}" -f $SiteCode
 $Query = "SELECT * FROM SMS_DeploymentSummary"
 
@@ -83,6 +101,13 @@ Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query | 
     }
     else {
         $null
+    } } }
+    @{ Name = "PackageSize"; Expression = { if ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Application") {
+        $Query = "SELECT PackageSize FROM SMS_ContentPackage WHERE SecurityKey='{0}'" -f $_.ModelName
+        (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
+    } elseif ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Package") {
+        $Query = "SELECT PackageSize FROM SMS_Package WHERE PackageID='{0}'" -f $_.PackageID
+        (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
     } } }
     "CollectionID"
     "CollectionName"
