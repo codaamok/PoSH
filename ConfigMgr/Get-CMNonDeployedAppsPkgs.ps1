@@ -79,7 +79,6 @@ $Splat = @{
     ComputerName = $SiteServer
     Namespace    = $Namespace
     Query        = "SELECT * FROM SMS_ApplicationLatest WHERE IsDeployed = {0}" -f [Int]$false
-    ErrorAction  = "Stop"
 }
 Get-CimInstance @Splat | Select-Object -Property @(
     @{ Name = "ObjectName";  Expression = { $_.LocalizedDisplayName } }
