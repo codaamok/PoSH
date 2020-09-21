@@ -102,13 +102,15 @@ Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query | 
     else {
         $null
     } } }
-    @{ Name = "PackageSize"; Expression = { if ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Application") {
-        $Query = "SELECT PackageSize FROM SMS_ContentPackage WHERE SecurityKey='{0}'" -f $_.ModelName
-        (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
-    } elseif ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Package") {
-        $Query = "SELECT PackageSize FROM SMS_Package WHERE PackageID='{0}'" -f $_.PackageID
-        (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
-    } } }
+    @{ Name = "PackageSize"; Expression = { 
+        if ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Application") {
+            $Query = "SELECT PackageSize FROM SMS_ContentPackage WHERE SecurityKey='{0}'" -f $_.ModelName
+            (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
+        } elseif ([SMS_DeploymentSummary_FeatureType]$_.FeatureType -eq "Program") {
+            $Query = "SELECT PackageSize FROM SMS_Package WHERE PackageID='{0}'" -f $_.PackageID
+            (Get-CimInstance -ComputerName $SiteServer -Namespace $Namespace -Query $Query).PackageSize
+        } 
+    } }
     "CollectionID"
     "CollectionName"
     @{ Name = "CollectionType"; Expression = { [SMS_DeploymentSummary_CollectionType]$_.CollectionType } }
