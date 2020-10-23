@@ -122,3 +122,4 @@ $script:MyUsername = Get-Username -OS $script:MyOS
 $script:mydocs = [Environment]::GetFolderPath("MyDocuments")
 
 Set-Alias -Name "l" -Value "Get-ChildItem"
+Set-Alias -Name "eps" -Value "Enter-PSSession"
