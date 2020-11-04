@@ -77,16 +77,6 @@ function Search-History {
     Get-Content (Get-PSReadlineOption).HistorySavePath | Where-Object { $_ -like ("*{0}*" -f $string) -and $_ -notmatch "^search" } | Select-Object -Unique
 }
 
-if (-not (Get-Module "codaamok" -ListAvailable)) {
-    $answer = Read-Host -Prompt "Profile module not installed, install? (Y)"
-    if ($answer -eq "Y" -or $answer -eq "") {
-        Install-Module -Name "codaamok" -Scope "CurrentUser" -ErrorAction "Continue"
-    }
-}
-else {
-    Update-ProfileModule
-}
-
 function Get-MyOS {
     switch -Regex ($PSVersionTable.PSVersion) {
         "^[6-7]" {
@@ -117,9 +107,24 @@ function Get-Username {
     }
 }
 
+if (-not (Get-Module "codaamok" -ListAvailable)) {
+    $answer = Read-Host -Prompt "Profile module not installed, install? (Y)"
+    if ($answer -eq "Y" -or $answer -eq "") {
+        Install-Module -Name "codaamok" -Scope "CurrentUser" -ErrorAction "Continue"
+    }
+}
+else {
+    Update-ProfileModule
+}
+
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
 $script:mydocs = [Environment]::GetFolderPath("MyDocuments")
+$script:machineprofile = "{0}\profile-machine.ps1" -f $script:mydocs
+
+if (Test-Path $script:machineprofile) {
+    . $script:machineprofile
+}
 
 Set-Alias -Name "l" -Value "Get-ChildItem"
 Set-Alias -Name "eps" -Value "Enter-PSSession"
