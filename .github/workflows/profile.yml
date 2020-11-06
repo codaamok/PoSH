@@ -21,4 +21,4 @@ jobs:
           container_name: data
           sync: true
           source_dir: ${{ github.workspace }}
-          extra_args: --pattern ^profile\.ps1$
+          extra_args: --pattern profile.ps1

@@ -42,6 +42,7 @@ function prompt {
 }
 
 function Update-Profile {
+    [CmdletBinding()]
     param (
         [Parameter()]
         [String]$Url = "https://acook.io/profile"
