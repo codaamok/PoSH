@@ -43,6 +43,7 @@ function prompt {
 
 function Update-Profile {
     param (
+        [Parameter()]
         [String]$Url = "https://acook.io/profile"
     )
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
