@@ -1,0 +1,24 @@
+name: "Upload PowerShell profile to Azure Blob Storage"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'profile.ps1'
+
+jobs:
+  job-1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2.3.3
+
+      - name: Azure Blob Upload
+        uses: bacongobbler/azure-blob-storage-upload@v1.1.1
+        with:
+          connection_string: ${{ secrets.AZURE_STORAGE_BLOB_SAS_CONNECTIONSTRING }}
+          container_name: data
+          sync: true
+          source_dir: ${{ github.workspace }}
+          extra_args: ^profile\.ps1$
