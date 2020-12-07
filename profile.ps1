@@ -125,3 +125,5 @@ if (Test-Path $script:machineprofile) {
 
 Set-Alias -Name "l" -Value "Get-ChildItem"
 Set-Alias -Name "eps" -Value "Enter-PSSession"
+
+# test
