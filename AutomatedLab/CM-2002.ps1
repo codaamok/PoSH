@@ -197,7 +197,7 @@ Param (
     [String]$SiteName = $LabName,
 
     [Parameter()]
-    [ValidateSet("2002","Latest")]
+    [ValidateSet("2002", "2006", "Latest")]
     [String]$CMVersion = "Latest",
 
     [Parameter()]
