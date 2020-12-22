@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="10" errors="0" failures="0" not-run="33" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2020-12-22" time="20:17:55">
+  <environment clr-version="4.0.30319.42000" user-domain="ACC" cwd="C:\git\PoSH\AutomatedLab" platform="Microsoft Windows Server 2019 Standard|C:\Windows|\Device\Harddisk0\Partition4" machine-name="HYP01" nunit-version="2.5.8.0" os-version="10.0.17763" user="Adam" />
+  <culture-info current-culture="en-GB" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="163.0657" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\RootDC.tests.ps1" executed="True" result="Success" success="True" time="50.0697" asserts="0" description="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\RootDC.tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="[CMLab01] DC Generic" executed="True" result="Success" success="True" time="30.9291" asserts="0" description="[CMLab01] DC Generic">
+            <results>
+              <test-suite type="TestFixture" name="[CMLab01] DC Generic.Role deployment successful" executed="True" result="Success" success="True" time="30.6987" asserts="0" description="[CMLab01] DC Generic.Role deployment successful">
+                <results>
+                  <test-case description="[RootDC] Should return the correct amount of machines" name="[CMLab01] DC Generic.Role deployment successful.[RootDC] Should return the correct amount of machines" time="2.4305" asserts="0" success="True" result="Success" executed="True" />
+                  <test-suite type="ParameterizedTest" name="[CMLab01] DC Generic.Role deployment successful.DC01 should have ADWS running" executed="True" result="Success" success="True" time="20.7448" asserts="0" description="DC01 should have ADWS running">
+                    <results>
+                      <test-case description="DC01 should have ADWS running" name="[CMLab01] DC Generic.Role deployment successful.DC01 should have ADWS running(DC01)" time="20.7448" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                  <test-suite type="ParameterizedTest" name="[CMLab01] DC Generic.Role deployment successful.DC01 should respond to ADWS calls" executed="True" result="Success" success="True" time="7.0095" asserts="0" description="DC01 should respond to ADWS calls">
+                    <results>
+                      <test-case description="DC01 should respond to ADWS calls" name="[CMLab01] DC Generic.Role deployment successful.DC01 should respond to ADWS calls(DC01)" time="7.0095" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="[CMLab01] RootDC specific" executed="True" result="Success" success="True" time="46.6322" asserts="0" description="[CMLab01] RootDC specific">
+            <results>
+              <test-suite type="ParameterizedTest" name="[CMLab01] RootDC specific.DC01 should hold PDC emulator FSMO role" executed="True" result="Success" success="True" time="15.6583" asserts="0" description="DC01 should hold PDC emulator FSMO role">
+                <results>
+                  <test-case description="DC01 should hold PDC emulator FSMO role" name="[CMLab01] RootDC specific.DC01 should hold PDC emulator FSMO role(DC01)" time="15.6583" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\Routing.tests.ps1" executed="True" result="Success" success="True" time="74.7662" asserts="0" description="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\Routing.tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="[CMLab01] Routing" executed="True" result="Success" success="True" time="74.1261" asserts="0" description="[CMLab01] Routing">
+            <results>
+              <test-suite type="TestFixture" name="[CMLab01] Routing.Role deployment successful" executed="True" result="Success" success="True" time="74.0696" asserts="0" description="[CMLab01] Routing.Role deployment successful">
+                <results>
+                  <test-case description="[Routing] Should return the correct amount of machines" name="[CMLab01] Routing.Role deployment successful.[Routing] Should return the correct amount of machines" time="0.7636" asserts="0" success="True" result="Success" executed="True" />
+                  <test-suite type="ParameterizedTest" name="[CMLab01] Routing.Role deployment successful.[DC01] Should have Routing feature installed" executed="True" result="Success" success="True" time="58.3523" asserts="0" description="[DC01] Should have Routing feature installed">
+                    <results>
+                      <test-case description="[DC01] Should have Routing feature installed" name="[CMLab01] Routing.Role deployment successful.[DC01] Should have Routing feature installed(DC01)" time="58.3523" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                  <test-suite type="ParameterizedTest" name="[CMLab01] Routing.Role deployment successful.[DC01] Should be connected to the internet" executed="True" result="Success" success="True" time="14.8999" asserts="0" description="[DC01] Should be connected to the internet">
+                    <results>
+                      <test-case description="[DC01] Should be connected to the internet" name="[CMLab01] Routing.Role deployment successful.[DC01] Should be connected to the internet(DC01)" time="14.8999" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\SQLServer2017.tests.ps1" executed="True" result="Success" success="True" time="12.3388" asserts="0" description="C:\Program Files\WindowsPowerShell\Modules\AutomatedLabTest\5.31.0\internal\tests\SQLServer2017.tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="[CMLab01] SQLServer2017" executed="True" result="Success" success="True" time="11.9687" asserts="0" description="[CMLab01] SQLServer2017">
+            <results>
+              <test-suite type="TestFixture" name="[CMLab01] SQLServer2017.Role deployment successful" executed="True" result="Success" success="True" time="11.9168" asserts="0" description="[CMLab01] SQLServer2017.Role deployment successful">
+                <results>
+                  <test-case description="[SQLServer2017] Should return the correct amount of machines" name="[CMLab01] SQLServer2017.Role deployment successful.[SQLServer2017] Should return the correct amount of machines" time="0.7523" asserts="0" success="True" result="Success" executed="True" />
+                  <test-suite type="ParameterizedTest" name="[CMLab01] SQLServer2017.Role deployment successful.[CM01] Should have SQL Server 2017 installed" executed="True" result="Success" success="True" time="8.7259" asserts="0" description="[CM01] Should have SQL Server 2017 installed">
+                    <results>
+                      <test-case description="[CM01] Should have SQL Server 2017 installed" name="[CMLab01] SQLServer2017.Role deployment successful.[CM01] Should have SQL Server 2017 installed(CM01)" time="8.7259" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                  <test-suite type="ParameterizedTest" name="[CMLab01] SQLServer2017.Role deployment successful.[CM01] Instance(s) should be running" executed="True" result="Success" success="True" time="2.3769" asserts="0" description="[CM01] Instance(s) should be running">
+                    <results>
+                      <test-case description="[CM01] Instance(s) should be running" name="[CMLab01] SQLServer2017.Role deployment successful.[CM01] Instance(s) should be running(CM01)" time="2.3769" asserts="0" success="True" result="Success" executed="True" />
+                    </results>
+                  </test-suite>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
