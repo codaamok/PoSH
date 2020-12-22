@@ -143,7 +143,7 @@
     Source:       https://github.com/codaamok/PoSH/AutomatedLab
     TODO: Convert throw to ThrowTerminatingError() method
 #>
-#Requires -Version 5.1 -Modules "AutomatedLab", "Hyper-V"
+#Requires -Version 5.1 -Modules "AutomatedLab", "Hyper-V", @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 [Cmdletbinding()]
 Param (
     [Parameter()]
