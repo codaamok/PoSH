@@ -1,6 +1,6 @@
 This document uses this extension: https://github.com/sandy081/vscode-todotasks
 
-CM-1902:
+CM-2002:
     Testing command line: 
         C:\git\PoSH\AutomatedLab\CM-1902.ps1 -LabName "CMLab01" -VMPath "D:\AutomatedLab\" -Domain "acc.lab" -AddressSpace "192.168.100.0/24" -SiteCode "ACC" -SiteName "Adam Cook" -DCHostname "DC01" -DCCPU 2 -CMHostname "CM01" -CMCPU 4 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
 
@@ -25,3 +25,5 @@ CM-1902:
         ✘ maybe consider allowing the user to optionally install things such as RSP, SUP and DP? @cancelled (05/06/2020, 13:28:33)
         ✔ align changes with cm-1902 where possible @done (05/06/2020, 13:28:28)
         ✔ remove "Latest" from -CMVersion on CM-1902.ps1 and check anywhere that uses "Latest" @done (05/06/2020, 13:28:26)
+        ☐ seperate TP from CB as two different scripts due to the baseline for TP changing several times per year
+        ☐ consider deleting the extraction directory instead of skipping if it exists
