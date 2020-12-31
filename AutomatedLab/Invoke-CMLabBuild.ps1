@@ -42,4 +42,4 @@ else {
     $Arguments["AutoLogon"] = $true
 }
 
-& .\$CustomRoleVersion.ps1 @Arguments -Branch $Branch
+& .\$CustomRoleVersion.ps1 @Arguments -Branch $Branch -ExternalVMSwitchName "External"
