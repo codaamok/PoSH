@@ -235,6 +235,7 @@ function Update-CMSite {
         ReadyToInstall = 262146
         Downloading = 262145
         Installed = 196612
+        Failed = 262143
     }
     #endregion
 
@@ -444,6 +445,12 @@ function Update-CMSite {
             }
             Wait-LWLabJob -Job $job -NoNewLine
             $Update = $job | Receive-Job -ErrorAction SilentlyContinue
+            if ($Update.State -eq [SMS_CM_UpdatePackages_State]::Failed) {
+                Write-ScreenInfo -Message "."
+                $Message = "Update failed, check CMUpdate.log"
+                Write-ScreenInfo -Message $Message -TaskEnd -Type "Error"
+                throw $Message
+            }
         }
         # Writing dot because of -NoNewLine in Wait-LWLabJob
         Write-ScreenInfo -Message "."
