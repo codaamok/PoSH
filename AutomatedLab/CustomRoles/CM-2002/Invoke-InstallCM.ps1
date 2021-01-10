@@ -135,11 +135,60 @@ function Install-CMSite {
     $DCServerName = Get-LabVM -Role RootDC | Where-Object { $_.DomainName -eq  $CMServer.DomainName } | Select-Object -ExpandProperty Name
     $downloadTargetDirectory = "{0}\SoftwarePackages" -f $labSources
     $VMInstallDirectory = "C:\Install"
-    $VMCMBinariesDirectory = "{0}\{1}" -f $VMInstallDirectory, (Split-Path $CMBinariesDirectory -Leaf)
-    $VMCMPreReqsDirectory = "{0}\{1}" -f $VMInstallDirectory, (Split-Path $CMPreReqsDirectory -Leaf)
-    $CMComputerAccount = '{0}\{1}$' -f @(
-        $CMServer.DomainName.Substring(0, $CMServer.DomainName.IndexOf('.')),
-        $CMServerName
+    $VMCMBinariesDirectory = "{0}\CM-{1}" -f $VMInstallDirectory, $Branch
+    $VMCMPreReqsDirectory = "{0}\CM-PreReqs-{1}" -f $VMInstallDirectory, $Branch
+    $CMComputerAccount = '{0}\{1}$' -f $CMServer.DomainName.Substring(0, $CMServer.DomainName.IndexOf('.')), $CMServerName
+    $AVExcludedPaths = @(
+        $VMInstallDirectory
+        '{0}\ADK\adksetup.exe' -f $VMInstallDirectory
+        '{0}\WinPE\adkwinpesetup.exe' -f $VMInstallDirectory
+        '{0}\SMSSETUP\BIN\X64\setup.exe' -f $VMCMBinariesDirectory
+        'C:\Program Files\Microsoft SQL Server\MSSQL14.MSSQLSERVER\MSSQL\Binn\sqlservr.exe'
+        'C:\Program Files\Microsoft SQL Server Reporting Services\SSRS\ReportServer\bin\ReportingServicesService.exe'
+        'C:\Program Files\Microsoft Configuration Manager'
+        'C:\Program Files\Microsoft Configuration Manager\Inboxes'
+        'C:\Program Files\Microsoft Configuration Manager\Logs'
+        'C:\Program Files\Microsoft Configuration Manager\EasySetupPayload'
+        'C:\Program Files\Microsoft Configuration Manager\MP\OUTBOXES'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smsexec.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Sitecomp.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smswriter.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smssqlbkup.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Cmupdate.exe'
+        'C:\Program Files\SMS_CCM'
+        'C:\Program Files\SMS_CCM\Logs'
+        'C:\Program Files\SMS_CCM\ServiceData'
+        'C:\Program Files\SMS_CCM\PolReqStaging\POL00000.pol'
+        'C:\Program Files\SMS_CCM\ccmexec.exe'
+        'C:\Program Files\SMS_CCM\Ccmrepair.exe'
+        'C:\Program Files\SMS_CCM\RemCtrl\CmRcService.exe'
+        'C:\Windows\CCMSetup'
+        'C:\Windows\CCMSetup\ccmsetup.exe'
+        'C:\Windows\CCMCache'
+        'G:\SMS_DP$'
+        'G:\SMSPKGG$'
+        'G:\SMSPKG'
+        'G:\SMSPKGSIG'
+        'G:\SMSSIG$'
+        'G:\RemoteInstall'
+        'G:\WSUS'
+        'F:\Microsoft SQL Server'
+    )
+    $AVExcludedProcesses = @(
+        '{0}\ADK\adksetup.exe' -f $VMInstallDirectory
+        '{0}\WinPE\adkwinpesetup.exe' -f $VMInstallDirectory
+        '{0}\SMSSETUP\BIN\X64\setup.exe' -f $VMCMBinariesDirectory
+        'C:\Program Files\Microsoft SQL Server\MSSQL14.MSSQLSERVER\MSSQL\Binn\sqlservr.exe'
+        'C:\Program Files\Microsoft SQL Server Reporting Services\SSRS\ReportServer\bin\ReportingServicesService.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smsexec.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Sitecomp.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smswriter.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Smssqlbkup.exe'
+        'C:\Program Files\Microsoft Configuration Manager\bin\x64\Cmupdate.exe'
+        'C:\Program Files\SMS_CCM\ccmexec.exe'
+        'C:\Program Files\SMS_CCM\Ccmrepair.exe'
+        'C:\Program Files\SMS_CCM\RemCtrl\CmRcService.exe'
+        'C:\Windows\CCMSetup\ccmsetup.exe'
     )
 
     $PSDefaultParameterValues = @{
@@ -294,6 +343,26 @@ function Install-CMSite {
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
 
+    #region Add Windows Defender exclusions
+    # https://docs.microsoft.com/en-us/troubleshoot/mem/configmgr/recommended-antivirus-exclusions
+    # https://docs.microsoft.com/en-us/powershell/module/defender/add-mppreference?view=win10-ps
+    # https://docs.microsoft.com/en-us/powershell/module/defender/set-mppreference?view=win10-ps
+    Write-ScreenInfo -Message "Adding Windows Defender exclusions" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Adding Windows Defender exclusions" -Variable (Get-Variable "AVExcludedPaths", "AVExcludedProcesses") -ScriptBlock {
+        Add-MpPreference -ExclusionPath $AVExcludedPaths -ExclusionProcess $AVExcludedProcesses -ErrorAction "Stop"
+        Set-MpPreference -RealTimeScanDirection "Incoming" -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        Write-ScreenInfo -Message ("Failed to add Windows Defender exclusions ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
+
     #region Bringing online additional disks
     Write-ScreenInfo -Message "Bringing online additional disks" -TaskStart
     #Bringing all available disks online (this is to cater for the secondary drive)
@@ -319,7 +388,7 @@ function Install-CMSite {
     Write-ScreenInfo -Message "Saving NO_SMS_ON_DRIVE.SMS file on C: and F:" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Place NO_SMS_ON_DRIVE.SMS file on C: and F:" -ScriptBlock {
         foreach ($drive in "C:","F:") {
-            $Path = "{0}\NO_SMS_ON_DRIVE_.SMS" -f $drive
+            $Path = "{0}\NO_SMS_ON_DRIVE.SMS" -f $drive
             if (-not (Test-Path $Path)) {
                 New-Item -Path $Path -ItemType "File" -ErrorAction "Stop"
             }
@@ -355,7 +424,7 @@ function Install-CMSite {
     #region Copy CM binaries, pre-reqs, SQL Server Native Client, ADK and WinPE files
     Write-ScreenInfo -Message "Copying files" -TaskStart
     try {
-        Copy-LabFileItem -Path $CMBinariesDirectory -DestinationFolderPath $VMInstallDirectory
+        Copy-LabFileItem -Path $CMBinariesDirectory/* -DestinationFolderPath $VMCMBinariesDirectory
     }
     catch {
         $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $CMBinariesDirectory, $VMInstallDirectory, $CMServerName, $CopyLabFileItem.Exception.Message
@@ -363,7 +432,7 @@ function Install-CMSite {
         throw $Message
     }
     try {
-        Copy-LabFileItem -Path $CMPreReqsDirectory -DestinationFolderPath $VMInstallDirectory
+        Copy-LabFileItem -Path $CMPreReqsDirectory/* -DestinationFolderPath $VMCMPreReqsDirectory
     }
     catch {
         $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $CMPreReqsDirectory, $VMInstallDirectory, $CMServerName, $CopyLabFileItem.Exception.Message

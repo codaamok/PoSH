@@ -468,7 +468,7 @@ else {
         CMSiteCode              = $SiteCode
         CMSiteName              = $SiteName
         CMBinariesDirectory     = "{0}\SoftwarePackages\CM1902" -f $labSources
-        CMPreReqsDirectory      = "{0}\SoftwarePackages\CMPreReqs" -f $labSources
+        CMPreReqsDirectory      = "{0}\SoftwarePackages\CM1902-PreReqs" -f $labSources
         CMProductId             = "Eval" # Can be "Eval" or a product key
         Version                 = $CMVersion
         AdkDownloadPath         = "{0}\SoftwarePackages\ADK" -f $labSources

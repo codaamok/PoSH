@@ -412,6 +412,34 @@ function Update-CMSite {
     #region Initiate update install and wait for state to change to Installed
     if ($Update.State -eq [SMS_CM_UpdatePackages_State]::ReadyToInstall) {
 
+        Write-ScreenInfo -Message "Waiting for SMS_SITE_COMPONENT_MANAGER to enter an idle state" -TaskStart
+        $ServiceState = New-LoopAction -LoopTimeout 30 -LoopTimeoutType "Minutes" -LoopDelay 1 -LoopDelayType "Minutes" -ExitCondition {
+            $sitecomplog -match '^Waiting for changes' -as [bool] -eq $true
+        } -IfTimeoutScript {
+            # Writing dot because of -NoNewLine in Wait-LWLabJob
+            Write-ScreenInfo -Message "."
+            $Message = "Timed out waiting for SMS_SITE_COMPONENT_MANAGER"
+            Write-ScreenInfo -Message $Message -TaskEnd -Type "Error"
+            throw $Message
+        } -IfSucceedScript {
+            # Writing dot because of -NoNewLine in Wait-LWLabJob
+            Write-ScreenInfo -Message "."
+            return $Update
+        } -ScriptBlock {
+            $job = Invoke-LabCommand -ActivityName "Reading sitecomp.log to determine SMS_SITE_COMPONENT_MANAGER state" -ScriptBlock {
+                Get-Content -Path "C:\Program Files\Microsoft Configuration Manager\Logs\sitecomp.log" -Tail 2 -ErrorAction "Stop"
+            }
+            Wait-LWLabJob -Job $job -NoNewLine
+            try {
+                $sitecomplog = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+            }
+            catch {
+                Write-ScreenInfo -Message ("Failed to read sitecomp.log to ({0})" -f $ReceiveJobErr.ErrorRecord.ExceptionMessage) -TaskEnd -Type "Error"
+                throw $ReceiveJobErr
+            }
+        }
+        Write-ScreenInfo -Message "Activity done" -TaskEnd
+
         Write-ScreenInfo -Message "Initiating update" -TaskStart
         $job = Invoke-LabCommand -ActivityName "Initiating update" -Variable (Get-Variable -Name "Update") -ScriptBlock {
             Invoke-CimMethod -InputObject $Update -MethodName "InitiateUpgrade" -Arguments @{PrereqFlag = $Update.PrereqFlag}
@@ -493,7 +521,6 @@ function Update-CMSite {
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
-
 }
 #endregion
 

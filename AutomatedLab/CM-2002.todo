@@ -27,4 +27,5 @@ CM-2002:
         ✔ remove "Latest" from -CMVersion on CM-1902.ps1 and check anywhere that uses "Latest" @done (05/06/2020, 13:28:26)
         ☐ seperate TP from CB as two different scripts due to the baseline for TP changing several times per year
         ☐ consider deleting the extraction directory instead of skipping if it exists
-        ☐ add AV exceptions to Defender, should improve install times
+        ☐ add AV exceptions to Defender, should improve install time
+        ☐ control which roles to install via param to CM-2002.ps1
