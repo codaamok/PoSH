@@ -327,7 +327,7 @@ function Update-CMSite {
         # If State doesn't change after 15 minutes, restart SMS_EXECUTIVE service and repeat this 3 times, otherwise quit.
         Write-ScreenInfo -Message "Verifying update download initiated OK" -TaskStart
         $Update = New-LoopAction -Iterations 3 -LoopDelay 1 -ExitCondition {
-            $Update.State -eq [SMS_CM_UpdatePackages_State]::Downloading
+            [SMS_CM_UpdatePackages_State]::Downloading, [SMS_CM_UpdatePackages_State]::ReadyToInstall -contains $Update.State
         } -IfTimeoutScript {
             $Message = "Could not initiate download (timed out)"
             Write-ScreenInfo -Message $Message -TaskEnd -Type "Error"
@@ -336,7 +336,7 @@ function Update-CMSite {
             return $Update
         } -ScriptBlock {
             $Update = New-LoopAction -LoopTimeout 15 -LoopTimeoutType "Minutes" -LoopDelay 5 -LoopDelayType "Seconds" -ExitCondition {
-                $Update.State -eq [SMS_CM_UpdatePackages_State]::Downloading
+                [SMS_CM_UpdatePackages_State]::Downloading, [SMS_CM_UpdatePackages_State]::ReadyToInstall -contains $Update.State
             } -IfSucceedScript {
                 return $Update
             } -IfTimeoutScript {
