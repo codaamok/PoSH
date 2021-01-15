@@ -27,5 +27,8 @@ CM-2002:
         ✔ remove "Latest" from -CMVersion on CM-1902.ps1 and check anywhere that uses "Latest" @done (05/06/2020, 13:28:26)
         ☐ seperate TP from CB as two different scripts due to the baseline for TP changing several times per year
         ☐ consider deleting the extraction directory instead of skipping if it exists
-        ☐ add AV exceptions to Defender, should improve install time
-        ☐ control which roles to install via param to CM-2002.ps1
+        ✔ add AV exceptions to Defender, should improve install time @done (13/01/2021, 21:16:03)
+        ✔ control which roles to install via param to CM-2002.ps1 @done (13/01/2021, 21:16:08)
+        ✔ use PXE responder instead of WDS - complete loop with timeout for this @done (14/01/2021, 17:27:57)
+        ✔ debug CM-1902 update CM where $null -eq $Update.State @done (14/01/2021, 17:28:03)
+        ☐ change throw to real terminating errors
