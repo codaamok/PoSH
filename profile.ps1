@@ -104,15 +104,6 @@ function Get-Username {
     }
 }
 
-function Get-WorkApps {
-    @(
-        "Front"
-        "Teams"
-        "tidio"
-        "outlook"
-    )
-}
-
 if (-not (Get-Module "codaamok" -ListAvailable)) {
     $answer = Read-Host -Prompt "Profile module not installed, install? (Y)"
     if ($answer -eq "Y" -or $answer -eq "") {
@@ -127,6 +118,12 @@ $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
 $script:mydocs = [Environment]::GetFolderPath("MyDocuments")
 $script:machineprofile = "{0}\profile-machine.ps1" -f $script:mydocs
+$script:WorkApps = @(
+    "Front"
+    "Teams"
+    "tidio"
+    "outlook"
+)
 
 if (Test-Path $script:machineprofile) {
     . $script:machineprofile
