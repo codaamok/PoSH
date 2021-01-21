@@ -104,6 +104,15 @@ function Get-Username {
     }
 }
 
+function Get-WorkApps {
+    @(
+        "Front"
+        "Teams"
+        "tidio"
+        "outlook"
+    )
+}
+
 if (-not (Get-Module "codaamok" -ListAvailable)) {
     $answer = Read-Host -Prompt "Profile module not installed, install? (Y)"
     if ($answer -eq "Y" -or $answer -eq "") {
