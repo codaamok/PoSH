@@ -32,11 +32,14 @@ Write-Host "Importing codaamok module"
 Import-Module "codaamok" -ErrorAction "Stop"
 
 Write-Host "Installing Chocolatey"
+Install-Choco
+
+Write-Host "Installing git"
 Start-Process -FilePath "C:\ProgramData\chocolatey\choco.exe" -ArgumentList "install","git","-y" -Wait
 
 Write-Host "Cloning PoSH.git"
 Push-Location "C:\git"
-Start-Process -FilePath "C:\Program Files\Git\bin\git.exe" -ArgumentList "clone","https://github.com/codaamok/PoSH.git"
+Start-Process -FilePath "C:\Program Files\Git\bin\git.exe" -ArgumentList "clone","https://github.com/codaamok/PoSH.git" -Wait
 Pop-Location
 
 Stop-Transcript
