@@ -6,8 +6,9 @@ $ISO = @{
     WindowsServer2019Eval = "https://software-download.microsoft.com/download/pr/17763.737.190906-2324.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us_1.iso"
 }
 
-Write-Host "Creating directory"
+Write-Host "Creating directories"
 New-Item -Path "C:\Sources" -ItemType "Directory" -Force -ErrorAction "Stop"
+New-Item -Path "C:\git" -ItemType "Directory" -Force -ErrorAction "Stop"
 
 Write-Host "Downloading AutomatedLab"
 Invoke-WebRequest -Uri $AutomatedLabURL -OutFile "C:\Sources\AutomatedLab.msi"
@@ -26,5 +27,16 @@ Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 
 Write-Host "Installing codaamok module"
 Install-Module "codaamok" -Force
+
+Write-Host "Importing codaamok module"
+Import-Module "codaamok" -ErrorAction "Stop"
+
+Write-Host "Installing Chocolatey"
+Start-Process -FilePath "C:\ProgramData\chocolatey\choco.exe" -ArgumentList "install","git","-y" -Wait
+
+Write-Host "Cloning PoSH.git"
+Push-Location "C:\git"
+Start-Process -FilePath "C:\Program Files\Git\bin\git.exe" -ArgumentList "clone","https://github.com/codaamok/PoSH.git"
+Pop-Location
 
 Stop-Transcript
