@@ -43,7 +43,7 @@ Start-Process -FilePath "C:\Program Files\Git\bin\git.exe" -ArgumentList "clone"
 Pop-Location
 
 Write-Host "Installing Hyper-V"
-Install-WindowsFeature -Name "Hyper-V*" -IncludeManagementTools
+Get-WindowsFeature -Name "Hyper-V*" | Install-WindowsFeature
 
 Write-Host "Scheduling reboot"
 Start-Process -FilePath "C:\Windows\system32\shutdown.exe" -ArgumentList "-r","-f","-t","15" -Wait
