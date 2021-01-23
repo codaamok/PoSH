@@ -22,11 +22,11 @@ foreach ($item in $ISO.GetEnumerator()) {
     Invoke-WebRequest -Uri $item.Value -OutFile $File
 }
 
-Write-Host "Updating Pester"
-Install-Module "Pester" -Force -SkipPublisherCheck
-
 Write-Host "Updating NuGet.exe"
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+
+Write-Host "Updating Pester"
+Install-Module "Pester" -Force -SkipPublisherCheck
 
 Write-Host "Installing codaamok module"
 Install-Module "codaamok" -Force
