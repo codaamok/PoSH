@@ -46,6 +46,6 @@ Write-Host "Installing Hyper-V"
 Install-WindowsFeature -Name "Hyper-V*" -IncludeManagementTools
 
 Write-Host "Scheduling reboot"
-Start-Process -FilePath "C:\system32\shutdown.exe" -ArgumentList "-r","-f","-t","15" -Wait
+Start-Process -FilePath "C:\Windows\system32\shutdown.exe" -ArgumentList "-r","-f","-t","15" -Wait
 
 Stop-Transcript
