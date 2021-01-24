@@ -52,6 +52,7 @@ $Params = @{
 $NetworkSecurityGroup = New-AzNetworkSecurityGroup @Params
 #endregion
 
+#region Create Azure VM
 $Params = @{
     Name = $Name
     Location = $Location
@@ -62,7 +63,9 @@ $Params = @{
     ErrorAction = "Stop"
 }
 New-AzVm @Params
+#endregion
 
+#region Execute custom script extension
 $Params = @{
     Name = "SetupAutomatedLab"
     Location = $Location
@@ -73,3 +76,4 @@ $Params = @{
     ErrorAction = "Stop"
 }
 Set-AzVMCustomScriptExtension @Params
+#endregion
