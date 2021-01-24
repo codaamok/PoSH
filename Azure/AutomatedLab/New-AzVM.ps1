@@ -5,11 +5,11 @@ param (
     [String]$Name,
 
     [Parameter()]
-    [String]$Size = "Standard_D8_v4"
+    [String]$Size = "Standard_D8ds_v4"
 )
 
 # Configuration variables
-$Location = "UK South"
+$Location = "uksouth"
 $IPInfoApiKey = (Get-Secure "IPInfo").GetNetworkCredential().Password
 $IPInfo = Invoke-RestMethod -Uri "https://ipinfo.io/json" -Headers @{"Authorisation" = "Bearer $IPInfoApiKey"} -ErrorAction "Stop"
 Write-Verbose ("Public IP is '{0}'" -f $IPinfo.IP)
@@ -59,7 +59,6 @@ $Params = @{
     ResourceGroupName = $ResourceGroup.ResourceGroupName
     Image = "Win2019Datacenter"
     Size = $Size
-    EnableUltraSSD = $true
     ErrorAction = "Stop"
 }
 New-AzVm @Params

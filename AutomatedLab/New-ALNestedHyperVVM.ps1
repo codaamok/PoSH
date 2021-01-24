@@ -7,15 +7,15 @@ $LabDefintiion = @{
 
 New-LabDefinition @LabDefintiion
 
-Add-LabVirtualNetworkDefinition -Name 'Default Switch' -HyperVProperties @{ SwitchType = 'External'; AdapterName = 'Internet' }
+Add-LabVirtualNetworkDefinition -Name $LabDefintiion["Name"] -HyperVProperties @{ SwitchType = 'External'; AdapterName = 'vEthernet (vEthernet (Inte)' }
 
-$netAdapter += New-LabNetworkAdapterDefinition -VirtualSwitch 'Default Switch' -UseDhcp
+$netAdapter += New-LabNetworkAdapterDefinition -VirtualSwitch $LabDefintiion["Name"] -UseDhcp
 
 $LabMachineDefinition = @{
     Name = "HYP01"
     OperatingSystem = "Windows Server 2019 Standard (Desktop Experience)"
-    Memory = 16GB
-    #Role = "HyperV"
+    Memory = 20GB
+    Role = "HyperV"
     NetworkAdapter = $netAdapter
     ErrorAction = "Stop"
 }
@@ -23,3 +23,7 @@ $LabMachineDefinition = @{
 Add-LabMachineDefinition @LabMachineDefinition
 
 Install-Lab
+
+Copy-LabFileItem -Path "C:\git\PoSH\Azure\AutomatedLab\New-AzVM-AutomatedLab-CustomScriptExt.ps1" -ComputerName $LabDefintiion["Name"] -DestinationFolderPath "C:\"
+
+Invoke-LabCommand -ActivityName "Executing post-install script" -ComputerName $LabDefintiion["Name"] -FilePath "C:\New-AzVM-AutomatedLab-CustomScriptExt.ps1"
