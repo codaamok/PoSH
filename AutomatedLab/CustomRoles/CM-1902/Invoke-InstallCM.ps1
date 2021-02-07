@@ -623,7 +623,7 @@ UseProxy=0
     Write-ScreenInfo -Message "Installing PXE Responder" -TaskStart
     New-LoopAction -LoopTimeout 15 -LoopTimeoutType "Minutes" -LoopDelay 60 -ScriptBlock {
         $job = Invoke-LabCommand -ActivityName "Installing PXE Responder" -Variable (Get-Variable "CMServerFqdn","CMServerName") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             Set-CMDistributionPoint -SiteSystemServerName $CMServerFqdn -EnablePxe $true -EnableNonWdsPxe $true -ErrorAction "Stop"
             do {
                 Start-Sleep -Seconds 5
@@ -653,7 +653,7 @@ UseProxy=0
     #region Install Sofware Update Point
     Write-ScreenInfo -Message "Installing Software Update Point" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "CMServerFqdn","CMServerName","CMSiteCode") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
         Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $CMServerFqdn -SiteCode $CMSiteCode -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job
@@ -671,7 +671,7 @@ UseProxy=0
     #region Add CM account to use for Reporting Service Point
     Write-ScreenInfo -Message ("Adding new CM account '{0}' to use for Reporting Service Point" -f $AdminUser) -TaskStart
     $job = Invoke-LabCommand -ActivityName ("Adding new CM account '{0}' to use for Reporting Service Point" -f $AdminUser) -Variable (Get-Variable "CMServerName", "CMSiteCode", "AdminUser", "AdminPass") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
         $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
         $Secure = ConvertTo-SecureString -String $AdminPass -AsPlainText -Force
         New-CMAccount -Name $Account -Password $Secure -SiteCode $CMSiteCode -ErrorAction "Stop"
@@ -691,7 +691,7 @@ UseProxy=0
     #region Install Reporting Service Point
     Write-ScreenInfo -Message "Installing Reporting Service Point" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Installing Reporting Service Point" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode", "AdminUser") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
         $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
         Add-CMReportingServicePoint -SiteCode $CMSiteCode -SiteSystemServerName $CMServerFqdn -ReportServerInstance "SSRS" -UserName $Account -ErrorAction "Stop"
     }
@@ -710,7 +710,7 @@ UseProxy=0
     #region Install Endpoint Protection Point
     Write-ScreenInfo -Message "Installing Endpoint Protection Point" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Installing Endpoint Protection Point" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode") -ScriptBlock {
-        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
         Add-CMEndpointProtectionPoint -ProtectionService "DoNotJoinMaps" -SiteCode $CMSiteCode -SiteSystemServerName $CMServerFqdn -ErrorAction "Stop"
     }
     Wait-LWLabJob -Job $job

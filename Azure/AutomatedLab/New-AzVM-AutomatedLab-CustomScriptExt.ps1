@@ -48,6 +48,9 @@ Pop-Location
 Write-Host "Installing Hyper-V"
 Get-WindowsFeature -Name "Hyper-V*" | Install-WindowsFeature
 
+Write-Host "Creating External virtual switch"
+New-VMSwitch -NetAdapterInterfaceDescription "Microsoft Hyper-V Network Adapter" -Name "Internet"
+
 Write-Host "Scheduling reboot"
 Start-Process -FilePath "C:\Windows\system32\shutdown.exe" -ArgumentList "-r","-f","-t","15" -Wait
 

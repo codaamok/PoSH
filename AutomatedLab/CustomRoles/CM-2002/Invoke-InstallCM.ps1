@@ -31,7 +31,10 @@ Param (
     [String]$AdminUser,
 
     [Parameter(Mandatory)]
-    [String]$AdminPass
+    [String]$AdminPass,
+
+    [Parameter(Mandatory)]
+    [AutomatedLab.IPNetwork]$LabVirtualNetwork
 
 )
 
@@ -66,13 +69,17 @@ function Install-CMSite {
         [String]$AdminUser,
     
         [Parameter(Mandatory)]
-        [String]$AdminPass
+        [String]$AdminPass,
+
+        [Parameter(Mandatory)]
+        [AutomatedLab.IPNetwork]$LabVirtualNetwork
     )
 
     #region Initialise
     $CMServer = Get-LabVM -ComputerName $CMServerName
     $CMServerFqdn = $CMServer.FQDN
     $DCServerName = Get-LabVM -Role RootDC | Where-Object { $_.DomainName -eq  $CMServer.DomainName } | Select-Object -ExpandProperty Name
+    $LabVirtualNetwork = Get-LabVirtualNetwork | Where-Object { $_.Name -eq  }
     $downloadTargetDirectory = "{0}\SoftwarePackages" -f $labSources
     $VMInstallDirectory = "C:\Install"
     $VMCMBinariesDirectory = "{0}\CM-{1}" -f $VMInstallDirectory, $Branch
@@ -664,7 +671,7 @@ function Install-CMSite {
     if ($CMRoles -contains "Distribution Point") {
         New-LoopAction -LoopTimeout 15 -LoopTimeoutType "Minutes" -LoopDelay 60 -ScriptBlock {
             $job = Invoke-LabCommand -ActivityName "Installing PXE Responder" -Variable (Get-Variable "CMServerFqdn","CMServerName") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-                Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+                Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
                 Set-CMDistributionPoint -SiteSystemServerName $CMServerFqdn -EnablePxe $true -EnableNonWdsPxe $true -ErrorAction "Stop"
                 do {
                     Start-Sleep -Seconds 5
@@ -695,11 +702,35 @@ function Install-CMSite {
     }
     #endregion
 
+    #region Configuring Distribution Point group
+    Write-ScreenInfo -Message "Configuring Distribution Point group" -TaskStart
+    if ($CMRoles -contains "Distribution Point") {
+        $job = Invoke-LabCommand -ActivityName "Configuring boundary and boundary group" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode") -ScriptBlock {
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
+            $DPGroup = New-CMDistributionPointGroup -Name "All DPs" -ErrorAction "Stop"
+            Add-CMDistributionPointGroup -DistributionPointGroupId $DPGroup.GroupId -DistributionPointName $CMServerFqdn -ErrorAction "Stop"
+        }
+        Wait-LWLabJob -Job $job
+        try {
+            $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+        }
+        catch {
+            $Message = "Failed while configuring Distribution Point group ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+            Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+            throw $ReceiveJobErr
+        }
+        Write-ScreenInfo -Message "Activity done" -TaskEnd
+    }
+    else {
+        Write-ScreenInfo -Message "Distribution Point not included in -CMRoles, skipping" -TaskEnd
+    }
+    #endregion
+
     #region Install Sofware Update Point
     Write-ScreenInfo -Message "Installing Software Update Point" -TaskStart
     if ($CMRoles -contains "Software Update Point") {
         $job = Invoke-LabCommand -ActivityName "Installing Software Update Point" -Variable (Get-Variable "CMServerFqdn","CMServerName","CMSiteCode") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             Add-CMSoftwareUpdatePoint -WsusIisPort 8530 -WsusIisSslPort 8531 -SiteSystemServerName $CMServerFqdn -SiteCode $CMSiteCode -ErrorAction "Stop"
         }
         Wait-LWLabJob -Job $job
@@ -722,7 +753,7 @@ function Install-CMSite {
     Write-ScreenInfo -Message ("Adding new CM account '{0}' to use for Reporting Service Point" -f $AdminUser) -TaskStart
     if ($CMRoles -contains "Reporting Services Point") {
         $job = Invoke-LabCommand -ActivityName ("Adding new CM account '{0}' to use for Reporting Service Point" -f $AdminUser) -Variable (Get-Variable "CMServerName", "CMSiteCode", "AdminUser", "AdminPass") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
             $Secure = ConvertTo-SecureString -String $AdminPass -AsPlainText -Force
             New-CMAccount -Name $Account -Password $Secure -SiteCode $CMSiteCode -ErrorAction "Stop"
@@ -747,7 +778,7 @@ function Install-CMSite {
     Write-ScreenInfo -Message "Installing Reporting Service Point" -TaskStart
     if ($CMRoles -contains "Reporting Services Point") {
         $job = Invoke-LabCommand -ActivityName "Installing Reporting Service Point" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode", "AdminUser") -Function (Get-Command "Import-CMModule") -ScriptBlock {
-            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             $Account = "{0}\{1}" -f $env:USERDOMAIN, $AdminUser
             Add-CMReportingServicePoint -SiteCode $CMSiteCode -SiteSystemServerName $CMServerFqdn -ReportServerInstance "SSRS" -UserName $Account -ErrorAction "Stop"
         }
@@ -771,7 +802,7 @@ function Install-CMSite {
     Write-ScreenInfo -Message "Installing Endpoint Protection Point" -TaskStart
     if ($CMRoles -contains "Endpoint Protection Point") {
         $job = Invoke-LabCommand -ActivityName "Installing Endpoint Protection Point" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode") -ScriptBlock {
-            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode
+            Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             Add-CMEndpointProtectionPoint -ProtectionService "DoNotJoinMaps" -SiteCode $CMSiteCode -SiteSystemServerName $CMServerFqdn -ErrorAction "Stop"
         }
         Wait-LWLabJob -Job $job
@@ -789,6 +820,27 @@ function Install-CMSite {
         Write-ScreenInfo -Message "Endpoint Protection Point not included in -CMRoles, skipping" -TaskEnd
     }
     #endregion
+
+    #region Configure boundary and boundary group
+    Write-ScreenInfo -Message "Configuring boundary and boundary group" -TaskStart
+    $job = Invoke-LabCommand -ActivityName "Configuring boundary and boundary group" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode", "CMSiteName", "LabVirtualNetwork") -ScriptBlock {
+        Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
+        $IPRange = "{0}-{1}" -f $LabVirtualNetwork.FirstUsable.AddressAsString, $LabVirtualNetwork.LastUsable.AddressAsString
+        $Boundary = New-CMBoundary -DisplayName $CMSiteName -Type "IPRange" -Value $IPRange -ErrorAction "Stop"
+        $BoundaryGroup = New-CMBoundaryGroup -Name $CMSiteName -AddSiteSystemServerName $CMServerFqdn -ErrorAction "Stop"
+        Add-CMBoundaryToGroup -BoundaryGroupId $BoundaryGroup.GroupId -BoundaryId $Boundary.BoundaryId -ErrorAction "Stop"
+    }
+    Wait-LWLabJob -Job $job
+    try {
+        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
+    }
+    catch {
+        $Message = "Failed configuring boundary and boundary group ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $ReceiveJobErr
+    }
+    Write-ScreenInfo -Message "Activity done" -TaskEnd
+    #endregion
 }
 #endregion
 
@@ -803,6 +855,7 @@ $InstallCMSiteSplat = @{
     CMRoles               = $CMRoles
     AdminUser             = $AdminUser
     AdminPass             = $AdminPass
+    LabVirtualNetwork     = $LabVirtualNetwork
 }
 
 Write-ScreenInfo -Message "Starting site install process" -TaskStart

@@ -508,6 +508,7 @@ else {
     $CMRole = Get-LabPostInstallationActivity -CustomRole "CM-2002" -Properties @{
         Branch              = $Branch
         Version             = $CMVersion
+        LabVirtualNetwork   = Get-LabVirtualNetwork | Where-Object { $_.Name -eq $LabName } | Select-Object -ExpandProperty "AddressSpace"
         CMSiteCode          = $SiteCode
         CMSiteName          = $SiteName
         CMBinariesDirectory = "{0}\SoftwarePackages\CM2002-{1}" -f $labSources, $Branch
