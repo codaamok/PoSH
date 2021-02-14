@@ -3,13 +3,26 @@
     Create a WinPE boot image.
 .DESCRIPTION
     Create a WinPE boot image. Optionally apply any updates, drivers or optional components to the image.
+.PARAMETER Platforms
+    Specify one or more of the following architectures to create a new WinPE image for: amd64, x86 and arm64.
+.PARAMETER OptionalComponents 
+    Specify one or more optional components to add to the WinPE boot image(s).
+.PARAMETER OutputDirectory
+    The directory where the new WinPE boot image(s) will be stored. If omitted, the default location is your Documents directory.
+.PARAMETER DriversDirectory
+    The directory that contains all the drivers you want added to the new WinPE boot image(s).
+.PARAMETER UpdatesDirectory
+    The directory that contains all the updates you want added to the new WinPE boot image(s).
+.PARAMETER ADKInstallDirectory
+    The root install directory of the ADK. Use this parameter specify a particular ADK install.
+    The script attempts to reach from the following registry keys in order to find the directory: 
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots:KitsRoot10"
+        "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots:KitsRoot10"
+    If both exist, the script will use the first one. An example of the default install directory is: "C:\Program Files (x86)\Windows Kits\10\"
 .EXAMPLE
     PS C:\> .\New-WinPEWIM.ps1 -Platforms "amd64" -OptionalComponents "WinPE-WDS-Tools", "WinPE-Scripting", "WinPE-WMI", "WinPE-SecureStartup", "WinPE-NetFx", "WinPE-PowerShell", "WinPE-StorageWMI", "WinPE-DismCmdlets" -OutputDirectory "G:\OSD\BootImages" -DriversDirectory "G:\Drivers\WINPE10.0-DRIVERS-A22-3GVJN\x64" -UpdatesDirectory "G:\SoftwareUpdates\Patches\20200213"
-    
     Copy winpe.wim from the amd64 folder in your ADKInstallDirectory to G:\OSD\BootImages named "WinPE-amd64-yyyy-MM-dd.wim". 
-    
     Mount the windows image to your %TEMP% directory and install the listed optional components. 
-    
     Then install all drivers in "G:\Drivers\WINPE10.0-DRIVERS-A22-3GVJN\x64" (recursively), and also install the Windows updates in "G:\SoftwareUpdates\Patches\20200213".
 .NOTES
     Author: Adam Cook (@codaamok)
