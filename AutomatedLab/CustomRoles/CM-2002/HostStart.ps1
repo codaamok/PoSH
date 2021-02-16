@@ -56,7 +56,7 @@ Param (
     [String]$AdminPass,
 
     [Parameter(Mandatory)]
-    [AutomatedLab.IPNetwork]$LabVirtualNetwork
+    [String]$ALLabName
 
 )
 

@@ -32,9 +32,9 @@ Param (
 
     [Parameter(Mandatory)]
     [String]$AdminPass,
-
+    
     [Parameter(Mandatory)]
-    [AutomatedLab.IPNetwork]$LabVirtualNetwork
+    [String]$ALLabName
 
 )
 
@@ -70,18 +70,19 @@ function Install-CMSite {
     
         [Parameter(Mandatory)]
         [String]$AdminPass,
-
+        
         [Parameter(Mandatory)]
-        [AutomatedLab.IPNetwork]$LabVirtualNetwork
+        [String]$ALLabName
     )
 
     #region Initialise
     $CMServer = Get-LabVM -ComputerName $CMServerName
     $CMServerFqdn = $CMServer.FQDN
     $DCServerName = Get-LabVM -Role RootDC | Where-Object { $_.DomainName -eq  $CMServer.DomainName } | Select-Object -ExpandProperty Name
-    $LabVirtualNetwork = Get-LabVirtualNetwork | Where-Object { $_.Name -eq  }
     $downloadTargetDirectory = "{0}\SoftwarePackages" -f $labSources
     $VMInstallDirectory = "C:\Install"
+    $LabVirtualNetwork = Get-LabVirtualNetwork | Where-Object { $_.Name -eq $ALLabName } | Select-Object -ExpandProperty "AddressSpace"
+    $CMBoundaryIPRange = "{0}-{1}" -f $LabVirtualNetwork.FirstUsable.AddressAsString, $LabVirtualNetwork.LastUsable.AddressAsString
     $VMCMBinariesDirectory = "{0}\CM-{1}" -f $VMInstallDirectory, $Branch
     $VMCMPreReqsDirectory = "{0}\CM-PreReqs-{1}" -f $VMInstallDirectory, $Branch
     $CMComputerAccount = '{0}\{1}$' -f $CMServer.DomainName.Substring(0, $CMServer.DomainName.IndexOf('.')), $CMServerName
@@ -227,7 +228,7 @@ function Install-CMSite {
     ConvertTo-Ini -Content $CMSetupConfig -SectionTitleKeyName "Title" | Out-File -FilePath $CMSetupConfigIni -Encoding "ASCII" -ErrorAction "Stop"
     #endregion
     
-    # Pre-req checks
+    #region Pre-req checks
     Write-ScreenInfo -Message "Running pre-req checks" -TaskStart
 
     Write-ScreenInfo -Message "Checking if site is already installed" -TaskStart
@@ -672,7 +673,7 @@ function Install-CMSite {
         New-LoopAction -LoopTimeout 15 -LoopTimeoutType "Minutes" -LoopDelay 60 -ScriptBlock {
             $job = Invoke-LabCommand -ActivityName "Installing PXE Responder" -Variable (Get-Variable "CMServerFqdn","CMServerName") -Function (Get-Command "Import-CMModule") -ScriptBlock {
                 Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
-                Set-CMDistributionPoint -SiteSystemServerName $CMServerFqdn -EnablePxe $true -EnableNonWdsPxe $true -ErrorAction "Stop"
+                Set-CMDistributionPoint -SiteSystemServerName $CMServerFqdn -AllowPxeResponse $true -EnablePxe $true -EnableNonWdsPxe $true -ErrorAction "Stop"
                 do {
                     Start-Sleep -Seconds 5
                 } while ((Get-Service).Name -notcontains "SccmPxe")
@@ -708,7 +709,7 @@ function Install-CMSite {
         $job = Invoke-LabCommand -ActivityName "Configuring boundary and boundary group" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode") -ScriptBlock {
             Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
             $DPGroup = New-CMDistributionPointGroup -Name "All DPs" -ErrorAction "Stop"
-            Add-CMDistributionPointGroup -DistributionPointGroupId $DPGroup.GroupId -DistributionPointName $CMServerFqdn -ErrorAction "Stop"
+            Add-CMDistributionPointToGroup -DistributionPointGroupId $DPGroup.GroupId -DistributionPointName $CMServerFqdn -ErrorAction "Stop"
         }
         Wait-LWLabJob -Job $job
         try {
@@ -823,10 +824,9 @@ function Install-CMSite {
 
     #region Configure boundary and boundary group
     Write-ScreenInfo -Message "Configuring boundary and boundary group" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Configuring boundary and boundary group" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode", "CMSiteName", "LabVirtualNetwork") -ScriptBlock {
+    $job = Invoke-LabCommand -ActivityName "Configuring boundary and boundary group" -Variable (Get-Variable "CMServerFqdn", "CMServerName", "CMSiteCode", "CMSiteName", "CMBoundaryIPRange") -ScriptBlock {
         Import-CMModule -ComputerName $CMServerName -SiteCode $CMSiteCode -ErrorAction "Stop"
-        $IPRange = "{0}-{1}" -f $LabVirtualNetwork.FirstUsable.AddressAsString, $LabVirtualNetwork.LastUsable.AddressAsString
-        $Boundary = New-CMBoundary -DisplayName $CMSiteName -Type "IPRange" -Value $IPRange -ErrorAction "Stop"
+        $Boundary = New-CMBoundary -DisplayName $CMSiteName -Type "IPRange" -Value $CMBoundaryIPRange -ErrorAction "Stop"
         $BoundaryGroup = New-CMBoundaryGroup -Name $CMSiteName -AddSiteSystemServerName $CMServerFqdn -ErrorAction "Stop"
         Add-CMBoundaryToGroup -BoundaryGroupId $BoundaryGroup.GroupId -BoundaryId $Boundary.BoundaryId -ErrorAction "Stop"
     }
@@ -855,7 +855,7 @@ $InstallCMSiteSplat = @{
     CMRoles               = $CMRoles
     AdminUser             = $AdminUser
     AdminPass             = $AdminPass
-    LabVirtualNetwork     = $LabVirtualNetwork
+    ALLabName             = $ALLabName
 }
 
 Write-ScreenInfo -Message "Starting site install process" -TaskStart
