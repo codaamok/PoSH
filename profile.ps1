@@ -114,6 +114,15 @@ else {
     Update-ProfileModule
 }
 
+if ((Get-Module "PSReadline").version -lt [System.Version]2.2.0) {
+    Install-Module "PSReadline" -AllowPrerelease -Force
+    Write-Host "PSReadline updated, please reload"
+}
+else {
+    Set-PSReadLineOption -PredictionSource History
+    Set-PSReadLineOption -PredictionViewStyle ListView
+}
+
 $script:MyOS = Get-MyOS
 $script:MyUsername = Get-Username -OS $script:MyOS
 $script:mydocs = [Environment]::GetFolderPath("MyDocuments")
@@ -131,5 +140,3 @@ if (Test-Path $script:machineprofile) {
 
 Set-Alias -Name "l" -Value "Get-ChildItem"
 Set-Alias -Name "eps" -Value "Enter-PSSession"
-
-# test
