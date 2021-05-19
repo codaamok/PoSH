@@ -1,0 +1,16 @@
+This document uses this extension: https://github.com/sandy081/vscode-todotasks
+
+CM-2002:
+    Testing command line: 
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -LabName "CMLab01" -VMPath "D:\AutomatedLab\" -Domain "acc.lab" -AddressSpace "192.168.100.0/24" -SiteCode "ACC" -SiteName "Adam Cook" -DCHostname "DC01" -DCCPU 2 -CMHostname "CM01" -CMCPU 4 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2016" -ExcludePostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -CMVersion "1910" -LogViewer "OneTrace" -OSVersion "2016" -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -VMPath "D:\AutomatedLab\" -OSVersion "2019" -DCMemory 2GB -CMMemory 8GB -AdminUser "Adam" -AdminPass "Orange123" 
+
+        C:\git\PoSH\AutomatedLab\CM-1902.ps1 -SkipDomainCheck -SkipLabNameCheck -SkipHostnameCheck -PostInstallations
+    Tasks for initial release:
+        ✔ test TP @done (19/05/2021, 19:26:50)
+        ✔ test CM 2103 @done (19/05/2021, 19:26:47)

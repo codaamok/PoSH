@@ -1,7 +1,7 @@
 #Requires -Version 5.1 -Modules "AutomatedLab"
 Param (
     [Parameter(Mandatory)]
-    [ValidateSet("CM-1902", "CM-2002")]
+    [ValidateSet("CM-1902", "CM-2002", "CM-2103")]
     [String]$CustomRoleVersion,
     [Parameter(Mandatory)]
     [ValidateSet("TP", "CB")]
