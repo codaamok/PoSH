@@ -32,3 +32,4 @@ CM-2002:
         ✔ use PXE responder instead of WDS - complete loop with timeout for this @done (14/01/2021, 17:27:57)
         ✔ debug CM-1902 update CM where $null -eq $Update.State @done (14/01/2021, 17:28:03)
         ☐ change throw to real terminating errors
+        ☐ add boundary and boundary group

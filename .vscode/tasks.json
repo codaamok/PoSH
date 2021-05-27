@@ -1,0 +1,68 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build ConfigMgr AutomatedLab",
+			"type": "process",
+			"command": "powershell",
+			"args": ["-noprofile","-file","Invoke-CMLabBuild.ps1","-CustomRoleVersion","${input:CustomRoleVersion}","-Branch","${input:Branch}"],
+			"options": {
+				"cwd": "${workspaceFolder}/AutomatedLab",
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Remove ConfigMgr AutomatedLab",
+			"type": "shell",
+			"command": "Import-Module AutomatedLab; Remove-Lab \"${input:LabName}\" -Confirm:$false",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "CustomRoleVersion",
+			"type": "pickString",
+			"description": "Which version of the custom role?",
+			"options": [
+				"CM-1902",
+				"CM-2002",
+				"CM-2103"
+			],
+			"default": "CM-2103"
+		},
+		{
+			"id": "Branch",
+			"type": "pickString",
+			"description": "Which branch?",
+			"options": [
+				"TP",
+				"CB"
+			],
+			"default": "CB"
+		},
+		{
+			"id": "LabName",
+			"type": "promptString",
+			"default": "CMLab01",
+			"description": "Name of the AutomatedLab lab"
+		}
+	]
+}

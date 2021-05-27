@@ -11,6 +11,8 @@ Param (
     [Switch]$DoNotCopyFiles
 )
 
+Import-Module Pester -MinimumVersion 5.0 -ErrorAction "Stop"
+
 if ($ExcludePostInstall.IsPresent -and $PostInstallOnly.IsPresent) {
     throw
 }
