@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "GraphAPI-Mail-CSharp"
+		},
+		{
+			"path": "GraphAPI-Mail-PS"
+		}
+	],
+	"settings": {
+		"debug.internalConsoleOptions": "neverOpen"
+	}
+}

@@ -7,7 +7,7 @@
 			"label": "Build ConfigMgr AutomatedLab",
 			"type": "process",
 			"command": "powershell",
-			"args": ["-noprofile","-file","Invoke-CMLabBuild.ps1","-CustomRoleVersion","${input:CustomRoleVersion}","-Branch","${input:Branch}"],
+			"args": ["-noprofile","-file","Invoke-CMLabBuild.ps1","-CustomRoleVersion","${input:CustomRoleVersion}","-Branch","${input:Branch}","-OSVersion","${input:OSVersion}"],
 			"options": {
 				"cwd": "${workspaceFolder}/AutomatedLab",
 			},
@@ -63,6 +63,22 @@
 			"type": "promptString",
 			"default": "CMLab01",
 			"description": "Name of the AutomatedLab lab"
-		}
+		},
+		{
+			"id": "OSVersion",
+			"type": "pickString",
+			"description": "Which OS?",
+			"options": [
+				"Windows Server 2016 Standard Evaluation (Desktop Experience)",
+				"Windows Server 2016 Datacenter Evaluation (Desktop Experience)",
+				"Windows Server 2016 Standard (Desktop Experience)",
+				"Windows Server 2016 Datacenter (Desktop Experience)",
+				"Windows Server 2019 Standard Evaluation (Desktop Experience)",
+				"Windows Server 2019 Datacenter Evaluation (Desktop Experience)",
+				"Windows Server 2019 Standard (Desktop Experience)",
+				"Windows Server 2019 Datacenter (Desktop Experience)"
+			],
+			"default": "Windows Server 2019 Standard (Desktop Experience)"
+		},
 	]
 }

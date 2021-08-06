@@ -6,6 +6,7 @@ Param (
     [Parameter(Mandatory)]
     [ValidateSet("TP", "CB")]
     [String]$Branch,
+    [String]$OSVersion,
     [Switch]$ExcludePostInstall,
     [Switch]$PostInstallOnly,
     [Switch]$DoNotCopyFiles
@@ -44,4 +45,4 @@ else {
     $Arguments["AutoLogon"] = $true
 }
 
-& .\$CustomRoleVersion.ps1 @Arguments -Branch $Branch -ExternalVMSwitchName "External"
+& .\$CustomRoleVersion.ps1 @Arguments -Branch $Branch -OSVersion $OSVersion -ExternalVMSwitchName "External"
