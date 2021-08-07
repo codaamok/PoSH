@@ -10,7 +10,7 @@ Write-Host "PowerShell HTTP trigger function processed a request."
 $Data = $Request.RawBody | ConvertFrom-Json
 
 Write-Host "Printing POST'ed data"
-foreach ($item in $Data.PSObject.Properties) {
+foreach ($item in $Data.PSObject.Properties.Name) {
     Write-Host ("- {0}: {1}" -f $item, $Data.$item)
 }
 
@@ -27,6 +27,7 @@ $InvokeGraphWebRequest = @{
     Uri         = "https://login.microsoftonline.com/$env:AAD_TENANT_NAME/oauth2/v2.0/token"
     Method      = "POST"
     Body        = $ReqTokenBody
+    ContentType = "application/x-www-form-urlencoded"
 }
 
 $TokenResponse = Invoke-GraphWebRequest @InvokeGraphWebRequest | Select-Object -ExpandProperty "Content" | ConvertFrom-Json
@@ -101,6 +102,7 @@ $InvokeGraphWebRequest = @{
     Headers     = @{
         Authorization = "Bearer {0}" -f $TokenResponse.access_token
     }
+    ContentType = "application/json"
 }
 
 $Response = Invoke-GraphWebRequest @InvokeGraphWebRequest | Select-Object -ExpandProperty Content | ConvertFrom-Json

@@ -35,7 +35,7 @@ function Invoke-GraphWebRequest {
         [Parameter()]
         [hashtable]$Headers,
 
-        [Parameter()]
+        [Parameter(Mandatory)]
         [String]$ContentType
     )
 
@@ -48,13 +48,30 @@ function Invoke-GraphWebRequest {
     }
 
     if ($PSBoundParameters.ContainsKey("Body")) {
-        # Sanitise client secret from the output stream
-        $PrintedBody = $Body.Clone()
-        if ($PrintedBody.ContainsKey("Client_Secret")) {
-            $PrintedBody["Client_Secret"] = "*"
+        switch ($ContentType) {
+            "application/x-www-form-urlencoded" {
+                $QueryString = [System.Web.HttpUtility]::ParseQueryString('')
+
+                # Sanitise client secret from the output stream
+                $DisplayBody = $Body.Clone()
+                if ($DisplayBody.ContainsKey("Client_Secret")) {
+                    $DisplayBody["Client_Secret"] = "*"
+                } 
+                $DisplayBody = $DisplayBody | ConvertTo-Json
+
+                Write-Host ("Body: {0}" -f $DisplayBody)
+
+                foreach ($item in $Body.GetEnumerator()) {
+                    $QueryString.Add($item.Key, $item.Value)
+                }
+                
+                $InvokeRestMethodSplat["Body"] = $QueryString.ToString()
+            }
+            "application/json" {
+                $InvokeRestMethodSplat["Body"] = $Body | ConvertTo-Json -Depth 5
+                Write-Host ("Body: {0}" -f $Body)
+            }
         }
-        Write-Host ("Body: {0}" -f ($PrintedBody | ConvertTo-Json -Depth 5))
-        $InvokeRestMethodSplat["Body"] = $Body
     }
 
     if ($PSBoundParameters.ContainsKey("Headers")) {
