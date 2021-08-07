@@ -27,13 +27,15 @@ namespace GraphAPI_Mail_CSharp
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-            JObject data = JsonConvert.DeserializeObject<JObject>(requestBody);
+            if ("" != requestBody) {
+                JObject data = JsonConvert.DeserializeObject<JObject>(requestBody);
 
-            log.LogInformation("Printing POST'ed data");
+                log.LogInformation("Printing POST'ed data");
 
-            foreach (var item in data)
-            {
-                log.LogInformation($"- {item.Key}: {item.Value}");
+                foreach (var item in data)
+                {
+                    log.LogInformation($"- {item.Key}: {item.Value}");
+                }
             }
 
             GraphAPIMailClient mail = new GraphAPIMailClient(
