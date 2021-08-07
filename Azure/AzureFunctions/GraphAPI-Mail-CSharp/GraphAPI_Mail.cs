@@ -27,10 +27,10 @@ namespace GraphAPI_Mail_CSharp
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
+            log.LogInformation("Printing POST'ed data");
+
             if ("" != requestBody) {
                 JObject data = JsonConvert.DeserializeObject<JObject>(requestBody);
-
-                log.LogInformation("Printing POST'ed data");
 
                 foreach (var item in data)
                 {
